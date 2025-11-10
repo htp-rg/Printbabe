@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Printbabe - Sales Tracker (Local Storage)</title>
+<title>Printbabe - Sales Tracker (Local Storage + Invoice Download)</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -28,13 +28,13 @@
   const paymentOptions = ['Gcash', 'Cash'];
   let allOrdersData = [];
   let latestTxnNumber = 0;
-  let cashOutData = { 'Gcash':0, 'Cash':0 }; // track cash-outs
+  let cashOutData = { 'Gcash':0, 'Cash':0 };
 
   function loadOrdersFromStorage() {
     const data = localStorage.getItem('printbabe_sales');
     allOrdersData = data ? JSON.parse(data) : [];
     const cashOutStored = localStorage.getItem('printbabe_cash_out');
-    cashOutData = cashOutStored ? JSON.parse(cashOutStored) : { 'Gcash':0, 'Cash':0, 'Maya':0, 'Bank transfer':0 };
+    cashOutData = cashOutStored ? JSON.parse(cashOutStored) : { 'Gcash':0, 'Cash':0 };
 
     latestTxnNumber = 0;
     allOrdersData.forEach(order => {
@@ -151,7 +151,7 @@
     const list = document.getElementById('orders-list');
     list.innerHTML = '';
     if(orders.length===0){
-      list.innerHTML = `<tr class="bg-pixel-lavender"><td colspan="9" class="py-4 text-center text-pixel-dark border border-pixel-dark" style="box-shadow:${pixelBoxShadow}">No orders recorded yet!</td></tr>`;
+      list.innerHTML = `<tr class="bg-pixel-lavender"><td colspan="10" class="py-4 text-center text-pixel-dark border border-pixel-dark" style="box-shadow:${pixelBoxShadow}">No orders recorded yet!</td></tr>`;
       return;
     }
 
@@ -169,7 +169,7 @@
         <td class="p-3 border border-pixel-dark"><input type="number" data-field="amount" data-index="${index}" value="${order.amount}" min="0.01" step="0.01" class="w-full bg-transparent outline-none edit-input text-right"></td>
         <td class="p-3 border border-pixel-dark text-center flex flex-col space-y-1 items-center justify-center">
           <button onclick="deleteOrder(${index})" class="text-xs font-bold bg-red-500 text-white px-2 py-1 rounded-sm shadow-md hover:bg-red-600">DELETE</button>
-          <button onclick="downloadInvoice(${index})" class="text-xs font-bold bg-green-500 text-white px-2 py-1 rounded-sm shadow-md hover:bg-green-600">DOWNLOAD INVOICE</button>
+          <button onclick="downloadInvoice(${index})" class="text-xs font-bold bg-green-600 text-white px-2 py-1 rounded-sm shadow-md hover:bg-green-700 mt-1">DOWNLOAD</button>
         </td>
       `;
       list.appendChild(row);
@@ -252,23 +252,22 @@
     setTimeout(()=>{box.style.opacity='0';},3000);
   }
 
- async function downloadInvoice(index){
+  async function downloadInvoice(index){
     const { jsPDF } = window.jspdf;
     const order = allOrdersData[index];
     const doc = new jsPDF({unit:'pt', format:'a4'});
     const margin = 40;
     const startY = 80;
 
-    
-const img = new Image();
-img.src = '1.jpg';
-await img.decode();
-doc.addImage(img, 'JPEG', 200, 10, 100, 50);
+    const img = new Image();
+    img.src = '1.jpg';
+    await img.decode();
+    doc.addImage(img, 'JPEG', 200, 10, 100, 50);
 
     doc.setFont('DotGothic16');
     doc.setFontSize(20);
     doc.setTextColor('#4B0082');
-    doc.text(PRINTBABE', margin, 40);
+    doc.text('PHOTO & PRINTBABE', margin, 40);
     doc.setFontSize(12);
     doc.text(`Invoice: ${order.txnId}`, margin, startY);
     doc.text(`Date: ${order.orderDate}`, margin, startY+16);
@@ -305,7 +304,6 @@ doc.addImage(img, 'JPEG', 200, 10, 100, 50);
     loadOrdersFromStorage();
   });
 </script>
-
 <style>
   .pixel-shadow{box-shadow:4px 4px 0 0 #4B0082;border:2px solid #4B0082;}
   .pixel-btn{box-shadow:3px 3px 0 0 #4B0082;transition: all 0.1s ease;}
@@ -324,88 +322,88 @@ doc.addImage(img, 'JPEG', 200, 10, 100, 50);
 
 <section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
   <div class="pixel-shadow bg-white p-6 rounded-lg">
-    <p class="text-lg font-bold">TOTAL SALES (PHP)</p>
-    <p id="total-sales" class="text-5xl mt-2 text-pixel-purple">₱ 0.00</p>
+    <p class="font-bold mb-2">Total Sales:</p>
+    <p id="total-sales" class="text-lg">₱ 0.00</p>
   </div>
   <div class="pixel-shadow bg-white p-6 rounded-lg">
-    <p class="text-lg font-bold">TOTAL ITEMS SOLD</p>
-    <p id="total-orders" class="text-5xl mt-2 text-pixel-purple">0</p>
+    <p class="font-bold mb-2">Total Orders:</p>
+    <p id="total-orders" class="text-lg">0</p>
   </div>
+</section>
+
+<section class="mb-8">
+  <form id="order-form" class="grid grid-cols-1 md:grid-cols-7 gap-2 items-end">
+    <div>
+      <label>Date</label>
+      <input type="date" id="new-order-date" class="edit-input p-1 w-full"/>
+    </div>
+    <div>
+      <label>Client Name</label>
+      <input type="text" id="new-full-name" class="edit-input p-1 w-full"/>
+    </div>
+    <div>
+      <label>Quantity</label>
+      <input type="number" id="new-quantity" value="1" class="edit-input p-1 w-full"/>
+    </div>
+    <div>
+      <label>Type</label>
+      <select id="new-type" class="edit-input p-1 w-full">
+        ${typeOptions.map(t=>`<option>${t}</option>`).join('')}
+      </select>
+    </div>
+    <div>
+      <label>Payment</label>
+      <select id="new-payment-method" class="edit-input p-1 w-full">
+        ${paymentOptions.map(t=>`<option>${t}</option>`).join('')}
+      </select>
+    </div>
+    <div>
+      <label>Amount</label>
+      <input type="number" step="0.01" id="new-amount" value="0" class="edit-input p-1 w-full"/>
+    </div>
+    <div>
+      <label>TXN ID</label>
+      <input type="text" id="new-txn-id" class="edit-input p-1 w-full" readonly/>
+    </div>
+    <div class="md:col-span-7 mt-2">
+      <button type="button" onclick="submitNewOrder()" class="px-4 py-2 bg-pixel-dark text-white font-bold rounded-sm pixel-btn">Add Order</button>
+    </div>
+  </form>
+</section>
+
+<section class="overflow-x-auto mb-8 pixel-shadow bg-white rounded-lg p-2">
+  <table class="w-full border-collapse">
+    <thead class="bg-pixel-purple text-white">
+      <tr>
+        <th class="p-3 border border-pixel-dark"><input type="checkbox" id="select-all"></th>
+        <th class="p-3 border border-pixel-dark">Date</th>
+        <th class="p-3 border border-pixel-dark">Client</th>
+        <th class="p-3 border border-pixel-dark">Qty</th>
+        <th class="p-3 border border-pixel-dark">Type</th>
+        <th class="p-3 border border-pixel-dark">Payment</th>
+        <th class="p-3 border border-pixel-dark">TXN ID</th>
+        <th class="p-3 border border-pixel-dark">Amount</th>
+        <th class="p-3 border border-pixel-dark">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="orders-list"></tbody>
+  </table>
 </section>
 
 <section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-  <div class="pixel-shadow bg-white p-4 rounded-lg">
-    <h2 class="text-lg font-bold mb-2">ITEMS SOLD PER CATEGORY (Ranking)</h2>
-    <div id="category-totals" class="text-sm"></div>
+  <div class="pixel-shadow bg-white p-6 rounded-lg">
+    <h2 class="font-bold mb-2">Top Categories</h2>
+    <div id="category-totals"></div>
   </div>
-  <div class="pixel-shadow bg-white p-4 rounded-lg">
-    <h2 class="text-lg font-bold mb-2">SALES PER MONTH (Highest First)</h2>
-    <div id="monthly-sales" class="text-sm"></div>
-  </div>
-</section>
-
-<section class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8">
-  <div class="pixel-shadow bg-white p-4 rounded-lg">
-    <h2 class="text-lg font-bold mb-2">PAYMENT METHOD TOTALS</h2>
-    <div id="payment-totals" class="text-sm"></div>
+  <div class="pixel-shadow bg-white p-6 rounded-lg">
+    <h2 class="font-bold mb-2">Monthly Sales</h2>
+    <div id="monthly-sales"></div>
   </div>
 </section>
 
-<section class="mb-8 p-6 pixel-shadow bg-white rounded-lg">
-<h2 class="text-2xl font-bold mb-4">ADD NEW ORDER / INVOICE</h2>
-<form id="order-form" class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-  <div><label class="block text-sm font-medium mb-1">DATE</label><input type="date" id="new-order-date" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple"></div>
-  <div><label class="block text-sm font-medium mb-1">QUANTITY</label><input type="number" id="new-quantity" placeholder="1" value="1" min="1" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple text-center"></div>
-  <div class="col-span-2"><label class="block text-sm font-medium mb-1">FULL NAME</label><input type="text" id="new-full-name" placeholder="Client's Full Name" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple"></div>
-  <div class="col-span-2"><label class="block text-sm font-medium mb-1">TYPE</label><select id="new-type" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple">
-  <option value="Keychain Long">Keychain Long</option>
-  <option value="Keychain Rectangle">Keychain Rectangle</option>
-  <option value="Invitation">Invitation</option>
-  <option value="Print (Short)">Print (Short)</option>
-  <option value="Print (Long)">Print (Long)</option>
-  <option value="Print (A4)">Print (A4)</option>
-  <option value="Print (Photo)">Print (Photo)</option>
-  <option value="Rush Id">Rush Id</option>
-  <option value="Ref Magnet">Ref Magnet</option>
-  <option value="Others" selected>Others</option>
-  </select></div>
-  <div class="col-span-2"><label class="block text-sm font-medium mb-1">Transaction/Invoice Number</label><input type="text" id="new-txn-id" readonly class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple"></div>
-  <div class="col-span-2"><label class="block text-sm font-medium mb-1">PAYMENT METHOD</label><select id="new-payment-method" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple">
-    <option value="Gcash">Gcash</option>
-    <option value="Cash" selected>Cash</option>
-  </select></div>
-  <div><label class="block text-sm font-medium mb-1">TOTAL (₱)</label><input type="number" id="new-amount" placeholder="500.00" min="0.01" step="0.01" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple text-right"></div>
-  <button type="button" onclick="submitNewOrder()" class="col-span-1 md:col-span-1 w-full px-6 py-2 bg-pixel-purple text-white font-bold rounded-sm hover:bg-violet-700 transition-colors pixel-btn">SAVE</button>
-</form>
-</section>
-
-<section class="p-4 md:p-6 pixel-shadow bg-white rounded-lg overflow-x-auto">
-<div class="flex flex-col md:flex-row justify-between items-center mb-4">
-  <h2 class="text-2xl font-bold mb-2 md:mb-0">ALL INVOICES</h2>
-  <div class="flex items-center space-x-4">
-    <label class="flex items-center space-x-2 text-sm font-bold">
-      <input type="checkbox" id="select-all" class="form-checkbox h-4 w-4 text-pixel-purple border-pixel-dark rounded cursor-pointer">
-      <span>Select All</span>
-    </label>
-  </div>
-</div>
-<table class="min-w-full border-collapse border border-pixel-dark text-sm">
-  <thead>
-  <tr class="bg-pixel-purple text-white">
-    <th class="p-3 border border-pixel-dark w-10">SEL.</th>
-    <th class="p-3 border border-pixel-dark">DATE</th>
-    <th class="p-3 border border-pixel-dark">FULL NAME</th>
-    <th class="p-3 border border-pixel-dark">QTY</th>
-    <th class="p-3 border border-pixel-dark">TYPE</th>
-    <th class="p-3 border border-pixel-dark">PAYMENT</th>
-    <th class="p-3 border border-pixel-dark">INVOICE/TXN #</th>
-    <th class="p-3 border border-pixel-dark">TOTAL (₱)</th>
-    <th class="p-3 border border-pixel-dark w-36">ACTIONS</th>
-  </tr>
-  </thead>
-  <tbody id="orders-list"></tbody>
-</table>
-<p class="mt-4 text-sm text-gray-500">Note: All fields in the table are editable and saved instantly.</p>
+<section class="pixel-shadow bg-white p-6 rounded-lg">
+  <h2 class="font-bold mb-2">Payment Totals</h2>
+  <div id="payment-totals"></div>
 </section>
 </div>
 </body>
