@@ -252,56 +252,56 @@
     setTimeout(()=>{box.style.opacity='0';},3000);
   }
 
-function downloadInvoice(index) {
+function downloadInvoice(index){
     const { jsPDF } = window.jspdf;
     const order = allOrdersData[index];
+    const formattedAmount = order.amount.toFixed(2);
+
     const doc = new jsPDF();
 
-    const formattedAmount = Number(order.amount).toFixed(2);
-
-    // Use helvetica which supports ₱
-    doc.setFont('helvetica', 'normal');
+    // --- HEADER in Pixel-Like Font ---
+    doc.setFont('Courier','bold'); 
     doc.setFontSize(18);
     doc.text('PRINTBABE', 105, 20, null, null, 'center');
 
+    // --- DETAILS ---
     doc.setFontSize(12);
+    doc.setFont('Courier','normal');
     doc.text(`Invoice: ${order.txnId}`, 20, 40);
     doc.text(`Date: ${order.orderDate}`, 20, 48);
     doc.text(`Client: ${order.fullName}`, 20, 56);
     doc.text(`Payment: ${order.paymentMethod}`, 20, 64);
 
-    // Table header
+    // --- TABLE HEADERS ---
     doc.setFontSize(14);
-    doc.text('--------------------------', 20, 74);
-    doc.text('ITEM', 20, 82);
-    doc.text('QTY', 80, 82, { align: 'center' });
-    doc.text('PRICE', 120, 82, { align: 'right' });
-    doc.text('TOTAL', 160, 82, { align: 'right' });
-    doc.text('--------------------------', 20, 90);
+    doc.text('--------------------------',20,74);
+    doc.text('ITEM',20,82);
+    doc.text('QTY',80,82);
+    doc.text('PRICE',120,82);
+    doc.text('TOTAL',160,82);
+    doc.text('--------------------------',20,90);
 
-    // Order details
+    // --- TABLE CONTENT ---
+    doc.setFont('helvetica','normal'); // Safe font for numbers
     doc.setFontSize(12);
     doc.text(order.type, 20, 100);
-    doc.text(String(order.quantity), 80, 100, { align: 'center' });
-    doc.text("\u20B1 " + formattedAmount, 120, 100, { align: 'right' });
-    doc.text("\u20B1 " + formattedAmount, 160, 100, { align: 'right' });
+    doc.text(String(order.quantity), 80, 100);
+    doc.text("PHP " + formattedAmount, 120, 100);
+    doc.text("PHP " + formattedAmount, 160, 100);
 
-    // Total
     doc.text('--------------------------', 20, 110);
-    doc.setFontSize(14);
-    doc.text("TOTAL AMOUNT: \u20B1 " + formattedAmount, 160, 120, { align: 'right' });
+    doc.text("TOTAL AMOUNT: PHP " + formattedAmount, 20, 120);
 
-    // Cash-out
+    // --- CASH OUT ---
     if (cashOutData[order.paymentMethod] && cashOutData[order.paymentMethod] > 0) {
-        doc.setTextColor(255, 0, 0);
-        doc.text("CASHED OUT: \u20B1 " + cashOutData[order.paymentMethod].toFixed(2), 160, 130, { align: 'right' });
-        doc.setTextColor(0, 0, 0);
+        doc.setTextColor(255,0,0);
+        doc.text("CASHED OUT: PHP " + cashOutData[order.paymentMethod].toFixed(2), 20, 130);
+        doc.setTextColor(0,0,0);
     }
 
     doc.save(`${order.txnId}.pdf`);
     showMessage("Invoice downloaded!", "success");
 }
-
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     const today = new Date().toISOString().split('T')[0];
