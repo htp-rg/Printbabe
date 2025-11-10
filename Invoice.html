@@ -3,410 +3,401 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Printbabe - Sales Tracker</title>
+<title>Printbabe - Sales Tracker (Local Storage)</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-tailwind.config = {
-  theme: {
-    extend: {
-      colors: {
-        'pixel-lavender': '#E6E6FA',
-        'pixel-purple': '#9370DB',
-        'pixel-dark': '#4B0082',
-      },
-      fontFamily: {
-        'pixel': ['"DotGothic16"', 'sans-serif'],
-      },
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          'pixel-lavender': '#E6E6FA',
+          'pixel-purple': '#9370DB',
+          'pixel-dark': '#4B0082',
+        },
+        fontFamily: {
+          'pixel': ['"DotGothic16"', 'sans-serif'],
+        },
+      }
     }
-  }
-};
+  };
 
-const pixelBoxShadow = '4px 4px 0 0 rgba(75, 0, 130, 0.8)';
-const typeOptions = ['Keychain Long', 'Keychain Rectangle', 'Invitation', 'Print (Short)', 'Print (Long)', 'Print (A4)','Print (Photo)','Rush Id', 'Ref Magnet', 'Others'];
-const paymentOptions = ['Gcash', 'Cash'];
-let allOrdersData = [];
-let latestTxnNumber = 0;
-let cashOutData = { 'Gcash':0, 'Cash':0 };
+  const pixelBoxShadow = '4px 4px 0 0 rgba(75, 0, 130, 0.8)';
+  const typeOptions = ['Keychain Long', 'Keychain Rectangle', 'Invitation', 'Print (Short)', 'Print (Long)', 'Print (A4)','Print (Photo)','Rush Id', 'Ref Magnet', 'Others'];
+  const paymentOptions = ['Gcash', 'Cash'];
+  let allOrdersData = [];
+  let latestTxnNumber = 0;
+  let cashOutData = { 'Gcash':0, 'Cash':0 }; // track cash-outs
 
-function loadOrdersFromStorage() {
-  const data = localStorage.getItem('printbabe_sales');
-  allOrdersData = data ? JSON.parse(data) : [];
-  const cashOutStored = localStorage.getItem('printbabe_cash_out');
-  cashOutData = cashOutStored ? JSON.parse(cashOutStored) : { 'Gcash':0, 'Cash':0 };
+  function loadOrdersFromStorage() {
+    const data = localStorage.getItem('printbabe_sales');
+    allOrdersData = data ? JSON.parse(data) : [];
+    const cashOutStored = localStorage.getItem('printbabe_cash_out');
+    cashOutData = cashOutStored ? JSON.parse(cashOutStored) : { 'Gcash':0, 'Cash':0, 'Maya':0, 'Bank transfer':0 };
 
-  latestTxnNumber = 0;
-  allOrdersData.forEach(order => {
-    const match = order.txnId ? order.txnId.match(/(\d+)$/) : null;
-    if (match && parseInt(match[1]) > latestTxnNumber) latestTxnNumber = parseInt(match[1]);
-  });
-  generateNextTxnId();
-  renderOrders(allOrdersData);
-  calculateTotals(allOrdersData);
-  calculateCategoryTotals(allOrdersData);
-  calculateMonthlySales(allOrdersData);
-  calculatePaymentTotals(allOrdersData);
-}
-
-function saveOrdersToStorage() {
-  localStorage.setItem('printbabe_sales', JSON.stringify(allOrdersData));
-  localStorage.setItem('printbabe_cash_out', JSON.stringify(cashOutData));
-}
-
-function generateNextTxnId() {
-  const nextNumber = latestTxnNumber + 1;
-  const year = new Date().getFullYear();
-  const formattedNumber = String(nextNumber).padStart(3, '0');
-  document.getElementById('new-txn-id').value = `PB-${year}-${formattedNumber}`;
-}
-
-function calculateTotals(orders) {
-  const totalSales = orders.reduce((sum, order) => sum + parseFloat(order.amount || 0), 0);
-  const totalQuantity = orders.reduce((sum, order) => sum + parseInt(order.quantity || 1), 0);
-  document.getElementById('total-sales').textContent = `₱ ${totalSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
-  document.getElementById('total-orders').textContent = totalQuantity.toLocaleString('en-PH');
-}
-
-function calculateCategoryTotals(orders) {
-  const categoryTotals = {};
-  typeOptions.forEach(type => categoryTotals[type] = 0);
-  orders.forEach(order => {
-    if(order.type in categoryTotals) categoryTotals[order.type] += parseInt(order.quantity);
-  });
-  const sorted = Object.entries(categoryTotals).sort((a,b)=>b[1]-a[1]);
-  const container = document.getElementById('category-totals');
-  container.innerHTML = '';
-  sorted.forEach(([type, qty], index) => {
-    const rank = index + 1;
-    const row = document.createElement('div');
-    row.className = "flex justify-between border-b border-pixel-dark py-1";
-    row.innerHTML = `<span>${rank}. ${type}</span><span>${qty}</span>`;
-    container.appendChild(row);
-  });
-}
-
-function calculateMonthlySales(orders) {
-  const monthTotals = {};
-  orders.forEach(order => {
-    const month = order.orderDate ? order.orderDate.slice(0,7) : null;
-    if(!month) return;
-    if(!monthTotals[month]) monthTotals[month] = 0;
-    monthTotals[month] += parseFloat(order.amount);
-  });
-  const sorted = Object.entries(monthTotals).sort((a,b)=>b[1]-a[1]);
-  const container = document.getElementById('monthly-sales');
-  container.innerHTML = '';
-  sorted.forEach(([month, total]) => {
-    const row = document.createElement('div');
-    row.className = "flex justify-between border-b border-pixel-dark py-1";
-    const date = new Date(month + '-01'); 
-    const monthName = date.toLocaleString('en-US',{month:'long', year:'numeric'});
-    row.innerHTML = `<span>${monthName}</span><span>₱ ${total.toLocaleString('en-PH',{minimumFractionDigits:2})}</span>`;
-    container.appendChild(row);
-  });
-}
-
-function calculatePaymentTotals(orders){
-  const totals = {};
-  paymentOptions.forEach(p => totals[p]=0);
-  orders.forEach(o=>{
-    if(o.paymentMethod in totals) totals[o.paymentMethod]+=parseFloat(o.amount);
-  });
-  const container = document.getElementById('payment-totals');
-  container.innerHTML = '';
-  paymentOptions.forEach(p=>{
-    const row = document.createElement('div');
-    row.className = "flex justify-between border-b border-pixel-dark py-1";
-    const remaining = totals[p]-cashOutData[p];
-    row.innerHTML = `<span>${p}</span><span>₱ ${totals[p].toLocaleString('en-PH',{minimumFractionDigits:2})} <span class="text-red-500">(-₱ ${cashOutData[p].toLocaleString('en-PH',{minimumFractionDigits:2})})</span> = ₱ ${remaining.toLocaleString('en-PH',{minimumFractionDigits:2})}</span>
-    <button onclick="cashOut('${p}')" class="ml-2 px-2 py-1 bg-yellow-400 text-black font-bold rounded-sm hover:bg-yellow-500 text-xs pixel-btn">CASH OUT</button>`;
-    container.appendChild(row);
-  });
-}
-
-function cashOut(method){
-  const amount = prompt(`Enter amount to cash out for ${method}:`);
-  const num = parseFloat(amount);
-  if(isNaN(num) || num<=0){
-    alert("Invalid amount!");
-    return;
-  }
-  cashOutData[method]+=num;
-  saveOrdersToStorage();
-  calculatePaymentTotals(allOrdersData);
-  showMessage(`₱ ${num.toLocaleString('en-PH',{minimumFractionDigits:2})} cashed out from ${method}!`,'success');
-}
-
-function createSelectHtml(field, index, selectedValue, options) {
-  let optionsHtml = options.map(opt => `<option value="${opt}" ${opt===selectedValue?'selected':''}>${opt}</option>`).join('');
-  return `<td class="p-3 border border-pixel-dark" style="box-shadow: 2px 2px 0 0 rgba(75, 0, 130, 0.4);">
-    <select data-field="${field}" data-index="${index}" class="w-full bg-transparent outline-none focus:bg-pixel-lavender edit-input p-1">
-      ${optionsHtml}
-    </select>
-  </td>`;
-}
-
-function renderOrders(orders) {
-  const list = document.getElementById('orders-list');
-  list.innerHTML = '';
-  if(orders.length===0){
-    list.innerHTML = `<tr class="bg-pixel-lavender"><td colspan="9" class="py-4 text-center text-pixel-dark border border-pixel-dark" style="box-shadow:${pixelBoxShadow}">No orders recorded yet!</td></tr>`;
-    return;
+    latestTxnNumber = 0;
+    allOrdersData.forEach(order => {
+      const match = order.txnId ? order.txnId.match(/(\d+)$/) : null;
+      if (match && parseInt(match[1]) > latestTxnNumber) latestTxnNumber = parseInt(match[1]);
+    });
+    generateNextTxnId();
+    renderOrders(allOrdersData);
+    calculateTotals(allOrdersData);
+    calculateCategoryTotals(allOrdersData);
+    calculateMonthlySales(allOrdersData);
+    calculatePaymentTotals(allOrdersData);
   }
 
-  orders.forEach((order, index)=>{
-    const row = document.createElement('tr');
-    row.className = "bg-white hover:bg-pixel-lavender transition-colors";
-    row.innerHTML = `
-      <td class="p-3 border border-pixel-dark text-center"><input type="checkbox" data-index="${index}" class="select-checkbox form-checkbox h-5 w-5 text-pixel-purple border-pixel-dark rounded cursor-pointer"></td>
-      <td class="p-3 border border-pixel-dark"><input type="date" data-field="orderDate" data-index="${index}" value="${order.orderDate}" class="w-full bg-transparent outline-none edit-input"></td>
-      <td class="p-3 border border-pixel-dark"><input type="text" data-field="fullName" data-index="${index}" value="${order.fullName}" class="w-full bg-transparent outline-none edit-input"></td>
-      <td class="p-3 border border-pixel-dark"><input type="number" data-field="quantity" data-index="${index}" value="${order.quantity}" min="1" class="w-full bg-transparent outline-none edit-input text-center"></td>
-      ${createSelectHtml('type', index, order.type, typeOptions)}
-      ${createSelectHtml('paymentMethod', index, order.paymentMethod, paymentOptions)}
-      <td class="p-3 border border-pixel-dark"><input type="text" data-field="txnId" data-index="${index}" value="${order.txnId}" class="w-full bg-transparent outline-none edit-input" readonly></td>
-      <td class="p-3 border border-pixel-dark"><input type="number" data-field="amount" data-index="${index}" value="${order.amount}" min="0.01" step="0.01" class="w-full bg-transparent outline-none edit-input text-right"></td>
-      <td class="p-3 border border-pixel-dark text-center flex flex-col space-y-1 items-center justify-center">
-        <button onclick="deleteOrder(${index})" class="text-xs font-bold bg-red-500 text-white px-2 py-1 rounded-sm shadow-md hover:bg-red-600">DELETE</button>
-        <button onclick="downloadInvoice(${index})" class="text-xs font-bold bg-green-500 text-white px-2 py-1 rounded-sm shadow-md hover:bg-green-600">DOWNLOAD INVOICE</button>
-      </td>
-    `;
-    list.appendChild(row);
-  });
-
-  document.querySelectorAll('.edit-input').forEach(input=>{
-    input.addEventListener('change', handleEditChange);
-  });
-  document.getElementById('select-all').addEventListener('change', toggleSelectAll);
-}
-
-function toggleSelectAll(event){
-  const isChecked = event.target.checked;
-  document.querySelectorAll('.select-checkbox').forEach(cb => cb.checked = isChecked);
-}
-
-function submitNewOrder(){
-  const date = document.getElementById('new-order-date').value.trim();
-  const quantity = parseInt(document.getElementById('new-quantity').value);
-  const fullName = document.getElementById('new-full-name').value.trim();
-  const type = document.getElementById('new-type').value;
-  const paymentMethod = document.getElementById('new-payment-method').value;
-  const txnId = document.getElementById('new-txn-id').value.trim();
-  const amount = parseFloat(document.getElementById('new-amount').value);
-
-  if(!date || !fullName || !txnId || isNaN(quantity)||quantity<1||isNaN(amount)||amount<=0){
-    showMessage("Please fill in all required fields!", "warning");
-    return;
+  function saveOrdersToStorage() {
+    localStorage.setItem('printbabe_sales', JSON.stringify(allOrdersData));
+    localStorage.setItem('printbabe_cash_out', JSON.stringify(cashOutData));
   }
 
-  allOrdersData.push({txnId, orderDate: date, quantity, type, paymentMethod, amount, fullName});
-  latestTxnNumber++;
-  saveOrdersToStorage();
-  renderOrders(allOrdersData);
-  calculateTotals(allOrdersData);
-  calculateCategoryTotals(allOrdersData);
-  calculateMonthlySales(allOrdersData);
-  calculatePaymentTotals(allOrdersData);
-  document.getElementById('order-form').reset();
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('new-order-date').value = today;
-  generateNextTxnId();
-  showMessage("Order added successfully!", "success");
-}
-
-function handleEditChange(event){
-  const input = event.target;
-  const index = parseInt(input.getAttribute('data-index'));
-  const field = input.getAttribute('data-field');
-  let value = input.value;
-  if(field==='amount') value=parseFloat(value);
-  if(field==='quantity') value=parseInt(value);
-  if(isNaN(value) && (field==='amount'||field==='quantity')) return;
-  allOrdersData[index][field] = value;
-  saveOrdersToStorage();
-  calculateTotals(allOrdersData);
-  calculateCategoryTotals(allOrdersData);
-  calculateMonthlySales(allOrdersData);
-  calculatePaymentTotals(allOrdersData);
-}
-
-function deleteOrder(index){
-  if(!confirm("Delete this order?")) return;
-  allOrdersData.splice(index,1);
-  saveOrdersToStorage();
-  renderOrders(allOrdersData);
-  calculateTotals(allOrdersData);
-  calculateCategoryTotals(allOrdersData);
-  calculateMonthlySales(allOrdersData);
-  calculatePaymentTotals(allOrdersData);
-  showMessage("Order deleted!", "success");
-}
-
-function showMessage(msg,type){
-  const box = document.getElementById('message-box');
-  box.textContent = msg;
-  box.className = 'p-3 mb-4 rounded-sm font-bold text-sm text-white transition-all duration-300 '+
-    (type==='success'?'bg-green-600':type==='warning'?'bg-yellow-500':'bg-red-600');
-  box.style.opacity='1';
-  setTimeout(()=>{box.style.opacity='0';},3000);
-}
-
-async function downloadInvoice(index){
-  const { jsPDF } = window.jspdf;
-  const order = allOrdersData[index];
-  const doc = new jsPDF({unit:'pt', format:'a4'});
-  const margin = 40;
-  const startY = 80;
-
-  const img = new Image();
-  img.src = '1.jpg';
-  await img.decode();
-  doc.addImage(img, 'JPEG', 200, 10, 100, 50);
-
-  doc.setFont('DotGothic16');
-  doc.setFontSize(20);
-  doc.setTextColor('#4B0082');
-  doc.text('PRINTBABE', margin, 40);
-  doc.setFontSize(12);
-  doc.text(`Invoice: ${order.txnId}`, margin, startY);
-  doc.text(`Date: ${order.orderDate}`, margin, startY+16);
-  doc.text(`Client: ${order.fullName}`, margin, startY+32);
-  doc.text(`Payment: ${order.paymentMethod}`, margin, startY+48);
-
-  doc.text('------------------------------', margin, startY+60);
-  doc.text('ITEM', margin, startY+76);
-  doc.text('QTY', margin+150, startY+76);
-  doc.text('PRICE', margin+250, startY+76);
-  doc.text('TOTAL', margin+350, startY+76);
-  doc.text('------------------------------', margin, startY+88);
-
-  const formattedAmount = '₱ ' + Number(order.amount).toFixed(2);
-  doc.text(order.type, margin, startY+104);
-  doc.text(order.quantity.toString(), margin+150, startY+104);
-  doc.text(formattedAmount, margin+250, startY+104);
-  doc.text(formattedAmount, margin+350, startY+104);
-
-  doc.text('------------------------------', margin, startY+120);
-  doc.text(`TOTAL AMOUNT: ${formattedAmount}`, margin, startY+136);
-
-  if(cashOutData[order.paymentMethod] && cashOutData[order.paymentMethod]>0){
-    doc.text(`Cash Out (${order.paymentMethod}): ₱ ${cashOutData[order.paymentMethod].toFixed(2)}`, margin, startY+152);
+  function generateNextTxnId() {
+    const nextNumber = latestTxnNumber + 1;
+    const year = new Date().getFullYear();
+    const formattedNumber = String(nextNumber).padStart(3, '0');
+    document.getElementById('new-txn-id').value = `PB-${year}-${formattedNumber}`;
   }
 
-  doc.save(`${order.txnId}.pdf`);
-}
+  function calculateTotals(orders) {
+    const totalSales = orders.reduce((sum, order) => sum + parseFloat(order.amount || 0), 0);
+    const totalQuantity = orders.reduce((sum, order) => sum + parseInt(order.quantity || 1), 0);
+    document.getElementById('total-sales').textContent = `₱ ${totalSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
+    document.getElementById('total-orders').textContent = totalQuantity.toLocaleString('en-PH');
+  }
 
-document.addEventListener('DOMContentLoaded',()=>{
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('new-order-date').value = today;
-  loadOrdersFromStorage();
-});
+  function calculateCategoryTotals(orders) {
+    const categoryTotals = {};
+    typeOptions.forEach(type => categoryTotals[type] = 0);
+    orders.forEach(order => {
+      if(order.type in categoryTotals) categoryTotals[order.type] += parseInt(order.quantity);
+    });
+    const sorted = Object.entries(categoryTotals).sort((a,b)=>b[1]-a[1]);
+    const container = document.getElementById('category-totals');
+    container.innerHTML = '';
+    sorted.forEach(([type, qty], index) => {
+      const rank = index + 1;
+      const row = document.createElement('div');
+      row.className = "flex justify-between border-b border-pixel-dark py-1";
+      row.innerHTML = `<span>${rank}. ${type}</span><span>${qty}</span>`;
+      container.appendChild(row);
+    });
+  }
+
+  function calculateMonthlySales(orders) {
+    const monthTotals = {};
+    orders.forEach(order => {
+      const month = order.orderDate ? order.orderDate.slice(0,7) : null;
+      if(!month) return;
+      if(!monthTotals[month]) monthTotals[month] = 0;
+      monthTotals[month] += parseFloat(order.amount);
+    });
+    const sorted = Object.entries(monthTotals).sort((a,b)=>b[1]-a[1]);
+    const container = document.getElementById('monthly-sales');
+    container.innerHTML = '';
+    sorted.forEach(([month, total]) => {
+      const row = document.createElement('div');
+      row.className = "flex justify-between border-b border-pixel-dark py-1";
+      const date = new Date(month + '-01'); 
+      const monthName = date.toLocaleString('en-US',{month:'long', year:'numeric'});
+      row.innerHTML = `<span>${monthName}</span><span>₱ ${total.toLocaleString('en-PH',{minimumFractionDigits:2})}</span>`;
+      container.appendChild(row);
+    });
+  }
+
+  function calculatePaymentTotals(orders){
+    const totals = {};
+    paymentOptions.forEach(p => totals[p]=0);
+    orders.forEach(o=>{
+      if(o.paymentMethod in totals) totals[o.paymentMethod]+=parseFloat(o.amount);
+    });
+    const container = document.getElementById('payment-totals');
+    container.innerHTML = '';
+    paymentOptions.forEach(p=>{
+      const row = document.createElement('div');
+      row.className = "flex justify-between border-b border-pixel-dark py-1";
+      const remaining = totals[p]-cashOutData[p];
+      row.innerHTML = `<span>${p}</span><span>₱ ${totals[p].toLocaleString('en-PH',{minimumFractionDigits:2})} <span class="text-red-500">(-₱ ${cashOutData[p].toLocaleString('en-PH',{minimumFractionDigits:2})})</span> = ₱ ${remaining.toLocaleString('en-PH',{minimumFractionDigits:2})}</span>
+      <button onclick="cashOut('${p}')" class="ml-2 px-2 py-1 bg-yellow-400 text-black font-bold rounded-sm hover:bg-yellow-500 text-xs pixel-btn">CASH OUT</button>`;
+      container.appendChild(row);
+    });
+  }
+
+  function cashOut(method){
+    const amount = prompt(`Enter amount to cash out for ${method}:`);
+    const num = parseFloat(amount);
+    if(isNaN(num) || num<=0){
+      alert("Invalid amount!");
+      return;
+    }
+    cashOutData[method]+=num;
+    saveOrdersToStorage();
+    calculatePaymentTotals(allOrdersData);
+    showMessage(`₱ ${num.toLocaleString('en-PH',{minimumFractionDigits:2})} cashed out from ${method}!`,'success');
+  }
+
+  function createSelectHtml(field, index, selectedValue, options) {
+    let optionsHtml = options.map(opt => `<option value="${opt}" ${opt===selectedValue?'selected':''}>${opt}</option>`).join('');
+    return `<td class="p-3 border border-pixel-dark" style="box-shadow: 2px 2px 0 0 rgba(75, 0, 130, 0.4);">
+      <select data-field="${field}" data-index="${index}" class="w-full bg-transparent outline-none focus:bg-pixel-lavender edit-input p-1">
+        ${optionsHtml}
+      </select>
+    </td>`;
+  }
+
+  function renderOrders(orders) {
+    const list = document.getElementById('orders-list');
+    list.innerHTML = '';
+    if(orders.length===0){
+      list.innerHTML = `<tr class="bg-pixel-lavender"><td colspan="9" class="py-4 text-center text-pixel-dark border border-pixel-dark" style="box-shadow:${pixelBoxShadow}">No orders recorded yet!</td></tr>`;
+      return;
+    }
+
+    orders.forEach((order, index)=>{
+      const row = document.createElement('tr');
+      row.className = "bg-white hover:bg-pixel-lavender transition-colors";
+      row.innerHTML = `
+        <td class="p-3 border border-pixel-dark text-center"><input type="checkbox" data-index="${index}" class="select-checkbox form-checkbox h-5 w-5 text-pixel-purple border-pixel-dark rounded cursor-pointer"></td>
+        <td class="p-3 border border-pixel-dark"><input type="date" data-field="orderDate" data-index="${index}" value="${order.orderDate}" class="w-full bg-transparent outline-none edit-input"></td>
+        <td class="p-3 border border-pixel-dark"><input type="text" data-field="fullName" data-index="${index}" value="${order.fullName}" class="w-full bg-transparent outline-none edit-input"></td>
+        <td class="p-3 border border-pixel-dark"><input type="number" data-field="quantity" data-index="${index}" value="${order.quantity}" min="1" class="w-full bg-transparent outline-none edit-input text-center"></td>
+        ${createSelectHtml('type', index, order.type, typeOptions)}
+        ${createSelectHtml('paymentMethod', index, order.paymentMethod, paymentOptions)}
+        <td class="p-3 border border-pixel-dark"><input type="text" data-field="txnId" data-index="${index}" value="${order.txnId}" class="w-full bg-transparent outline-none edit-input" readonly></td>
+        <td class="p-3 border border-pixel-dark"><input type="number" data-field="amount" data-index="${index}" value="${order.amount}" min="0.01" step="0.01" class="w-full bg-transparent outline-none edit-input text-right"></td>
+        <td class="p-3 border border-pixel-dark text-center flex flex-col space-y-1 items-center justify-center">
+          <button onclick="deleteOrder(${index})" class="text-xs font-bold bg-red-500 text-white px-2 py-1 rounded-sm shadow-md hover:bg-red-600">DELETE</button>
+          <button onclick="downloadInvoice(${index})" class="text-xs font-bold bg-green-500 text-white px-2 py-1 rounded-sm shadow-md hover:bg-green-600">DOWNLOAD INVOICE</button>
+        </td>
+      `;
+      list.appendChild(row);
+    });
+
+    document.querySelectorAll('.edit-input').forEach(input=>{
+      input.addEventListener('change', handleEditChange);
+    });
+    document.getElementById('select-all').addEventListener('change', toggleSelectAll);
+  }
+
+  function toggleSelectAll(event){
+    const isChecked = event.target.checked;
+    document.querySelectorAll('.select-checkbox').forEach(cb => cb.checked = isChecked);
+  }
+
+  function submitNewOrder(){
+    const date = document.getElementById('new-order-date').value.trim();
+    const quantity = parseInt(document.getElementById('new-quantity').value);
+    const fullName = document.getElementById('new-full-name').value.trim();
+    const type = document.getElementById('new-type').value;
+    const paymentMethod = document.getElementById('new-payment-method').value;
+    const txnId = document.getElementById('new-txn-id').value.trim();
+    const amount = parseFloat(document.getElementById('new-amount').value);
+
+    if(!date || !fullName || !txnId || isNaN(quantity)||quantity<1||isNaN(amount)||amount<=0){
+      showMessage("Please fill in all required fields!", "warning");
+      return;
+    }
+
+    allOrdersData.push({txnId, orderDate: date, quantity, type, paymentMethod, amount, fullName});
+    latestTxnNumber++;
+    saveOrdersToStorage();
+    renderOrders(allOrdersData);
+    calculateTotals(allOrdersData);
+    calculateCategoryTotals(allOrdersData);
+    calculateMonthlySales(allOrdersData);
+    calculatePaymentTotals(allOrdersData);
+    document.getElementById('order-form').reset();
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('new-order-date').value = today;
+    generateNextTxnId();
+    showMessage("Order added successfully!", "success");
+  }
+
+  function handleEditChange(event){
+    const input = event.target;
+    const index = parseInt(input.getAttribute('data-index'));
+    const field = input.getAttribute('data-field');
+    let value = input.value;
+    if(field==='amount') value=parseFloat(value);
+    if(field==='quantity') value=parseInt(value);
+    if(isNaN(value) && (field==='amount'||field==='quantity')) return;
+    allOrdersData[index][field] = value;
+    saveOrdersToStorage();
+    calculateTotals(allOrdersData);
+    calculateCategoryTotals(allOrdersData);
+    calculateMonthlySales(allOrdersData);
+    calculatePaymentTotals(allOrdersData);
+  }
+
+  function deleteOrder(index){
+    if(!confirm("Delete this order?")) return;
+    allOrdersData.splice(index,1);
+    saveOrdersToStorage();
+    renderOrders(allOrdersData);
+    calculateTotals(allOrdersData);
+    calculateCategoryTotals(allOrdersData);
+    calculateMonthlySales(allOrdersData);
+    calculatePaymentTotals(allOrdersData);
+    showMessage("Order deleted!", "success");
+  }
+
+  function showMessage(msg,type){
+    const box = document.getElementById('message-box');
+    box.textContent = msg;
+    box.className = 'p-3 mb-4 rounded-sm font-bold text-sm text-white transition-all duration-300 '+
+      (type==='success'?'bg-green-600':type==='warning'?'bg-yellow-500':'bg-red-600');
+    box.style.opacity='1';
+    setTimeout(()=>{box.style.opacity='0';},3000);
+  }
+
+  function downloadInvoice(index){
+    const { jsPDF } = window.jspdf;
+    const order = allOrdersData[index];
+    const doc = new jsPDF();
+
+    doc.setFont('Courier','normal');
+    doc.setFontSize(18);
+    doc.text('PHOTO & PRINTBABE', 105, 20, null, null, 'center');
+    doc.setFontSize(12);
+    doc.text(`Invoice: ${order.txnId}`, 20, 40);
+    doc.text(`Date: ${order.orderDate}`, 20, 48);
+    doc.text(`Client: ${order.fullName}`, 20, 56);
+    doc.text(`Payment: ${order.paymentMethod}`, 20, 64);
+
+    doc.setFontSize(14);
+    doc.text('--------------------------',20,74);
+    doc.text('ITEM',20,82);
+    doc.text('QTY',80,82);
+    doc.text('PRICE',120,82);
+    doc.text('TOTAL',160,82);
+    doc.text('--------------------------',20,90);
+
+    doc.text(order.type,20,100);
+    doc.text(String(order.quantity),80,100);
+    doc.text(`₱ ${order.amount.toLocaleString('en-PH',{minimumFractionDigits:2})}`,120,100);
+    doc.text(`₱ ${order.amount.toLocaleString('en-PH',{minimumFractionDigits:2})}`,160,100);
+    doc.text('--------------------------',20,110);
+    doc.text(`TOTAL AMOUNT: ₱ ${order.amount.toLocaleString('en-PH',{minimumFractionDigits:2})}`,20,120);
+    if(cashOutData[order.paymentMethod]){
+      doc.setTextColor(255,0,0);
+      doc.text(`CASHED OUT: ₱ ${cashOutData[order.paymentMethod].toLocaleString('en-PH',{minimumFractionDigits:2})}`,20,130);
+      doc.setTextColor(0,0,0);
+    }
+
+    doc.save(`${order.txnId}.pdf`);
+    showMessage("Invoice downloaded!", "success");
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('new-order-date').value = today;
+    loadOrdersFromStorage();
+  });
 </script>
+
 <style>
-.pixel-shadow{box-shadow:4px 4px 0 0 #4B0082;border:2px solid #4B0082;}
-.pixel-btn{box-shadow:3px 3px 0 0 #4B0082;transition: all 0.1s ease;}
-.pixel-btn:active{box-shadow:1px 1px 0 0 #4B0082;transform:translate(2px,2px);}
-.edit-input{-webkit-appearance:none;-moz-appearance:none;appearance:none;}
+  .pixel-shadow{box-shadow:4px 4px 0 0 #4B0082;border:2px solid #4B0082;}
+  .pixel-btn{box-shadow:3px 3px 0 0 #4B0082;transition: all 0.1s ease;}
+  .pixel-btn:active{box-shadow:1px 1px 0 0 #4B0082;transform:translate(2px,2px);}
+  .edit-input{-webkit-appearance:none;-moz-appearance:none;appearance:none;}
 </style>
 </head>
 <body class="bg-pixel-lavender min-h-screen p-4 md:p-8 font-pixel text-pixel-dark">
 <div id="message-box" class="fixed top-0 left-1/2 -translate-x-1/2 mt-4 z-50 opacity-0" style="min-width: 300px;"></div>
-
 <div class="max-w-6xl mx-auto">
 <header class="text-center mb-8 pixel-shadow bg-pixel-purple text-white p-4 rounded-lg flex flex-col items-center justify-center">
-  <img src="1.jpg" alt="Printbabe Logo" class="h-20 w-20 md:h-24 md:w-24 object-cover mb-2 rounded-full border-4 border-white shadow-lg">
-  <h1 class="text-3xl md:text-5xl tracking-widest">PHOTO & PRINTBABE</h1>
-  <p class="text-sm mt-2">Sales and Order Management System - PH Peso</p>
+   <img src="1.jpg" alt="Printbabe Logo" class="h-20 w-20 md:h-24 md:w-24 object-cover mb-2 rounded-full border-4 border-white shadow-lg">
+   <h1 class="text-3xl md:text-5xl tracking-widest">PHOTO & PRINTBABE</h1>
+   <p class="text-sm mt-2">Sales and Order Management System - PH Peso</p>
 </header>
 
-<!-- Totals -->
-<div class="grid md:grid-cols-4 gap-4 mb-8">
-  <div class="bg-white p-4 pixel-shadow rounded">
-    <h2 class="font-bold mb-2">Total Sales</h2>
-    <p id="total-sales" class="text-lg">₱ 0.00</p>
+<section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+  <div class="pixel-shadow bg-white p-6 rounded-lg">
+    <p class="text-lg font-bold">TOTAL SALES (PHP)</p>
+    <p id="total-sales" class="text-5xl mt-2 text-pixel-purple">₱ 0.00</p>
   </div>
-  <div class="bg-white p-4 pixel-shadow rounded">
-    <h2 class="font-bold mb-2">Total Orders</h2>
-    <p id="total-orders" class="text-lg">0</p>
+  <div class="pixel-shadow bg-white p-6 rounded-lg">
+    <p class="text-lg font-bold">TOTAL ITEMS SOLD</p>
+    <p id="total-orders" class="text-5xl mt-2 text-pixel-purple">0</p>
   </div>
-    <div class="bg-white p-4 pixel-shadow rounded">
-    <h2 class="font-bold mb-2">Category Totals</h2>
-    <div id="category-totals" class="text-sm max-h-40 overflow-y-auto"></div>
-  </div>
-  <div class="bg-white p-4 pixel-shadow rounded">
-    <h2 class="font-bold mb-2">Monthly Sales</h2>
-    <div id="monthly-sales" class="text-sm max-h-40 overflow-y-auto"></div>
-  </div>
-</div>
+</section>
 
-<!-- Payment Totals / Cash Out -->
-<div class="bg-white p-4 pixel-shadow rounded mb-8">
-  <h2 class="font-bold mb-2">Payment Totals</h2>
-  <div id="payment-totals" class="text-sm flex flex-col gap-1 max-h-40 overflow-y-auto"></div>
-</div>
+<section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+  <div class="pixel-shadow bg-white p-4 rounded-lg">
+    <h2 class="text-lg font-bold mb-2">ITEMS SOLD PER CATEGORY (Ranking)</h2>
+    <div id="category-totals" class="text-sm"></div>
+  </div>
+  <div class="pixel-shadow bg-white p-4 rounded-lg">
+    <h2 class="text-lg font-bold mb-2">SALES PER MONTH (Highest First)</h2>
+    <div id="monthly-sales" class="text-sm"></div>
+  </div>
+</section>
 
-<!-- New Order Form -->
-<div class="bg-white p-4 pixel-shadow rounded mb-8">
-  <h2 class="font-bold mb-4">Add New Order</h2>
-  <form id="order-form" class="grid md:grid-cols-6 gap-4 items-end">
-    <div>
-      <label class="block font-bold mb-1 text-xs">Date</label>
-      <input type="date" id="new-order-date" class="w-full border border-pixel-dark p-1 rounded-sm bg-transparent">
-    </div>
-    <div>
-      <label class="block font-bold mb-1 text-xs">Full Name</label>
-      <input type="text" id="new-full-name" class="w-full border border-pixel-dark p-1 rounded-sm bg-transparent">
-    </div>
-    <div>
-      <label class="block font-bold mb-1 text-xs">Quantity</label>
-      <input type="number" id="new-quantity" min="1" class="w-full border border-pixel-dark p-1 rounded-sm bg-transparent">
-    </div>
-    <div>
-      <label class="block font-bold mb-1 text-xs">Type</label>
-      <select id="new-type" class="w-full border border-pixel-dark p-1 rounded-sm bg-transparent">
-        ${typeOptions.map(t=>`<option value="${t}">${t}</option>`).join('')}
-      </select>
-    </div>
-    <div>
-      <label class="block font-bold mb-1 text-xs">Payment</label>
-      <select id="new-payment-method" class="w-full border border-pixel-dark p-1 rounded-sm bg-transparent">
-        ${paymentOptions.map(p=>`<option value="${p}">${p}</option>`).join('')}
-      </select>
-    </div>
-    <div>
-      <label class="block font-bold mb-1 text-xs">Amount (₱)</label>
-      <input type="number" id="new-amount" min="0.01" step="0.01" class="w-full border border-pixel-dark p-1 rounded-sm bg-transparent">
-    </div>
-    <input type="hidden" id="new-txn-id">
-    <div class="md:col-span-6 flex justify-end mt-2">
-      <button type="button" onclick="submitNewOrder()" class="px-4 py-2 bg-pixel-purple text-white font-bold rounded-sm pixel-btn hover:bg-purple-700">Add Order</button>
-    </div>
-  </form>
-</div>
+<section class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8">
+  <div class="pixel-shadow bg-white p-4 rounded-lg">
+    <h2 class="text-lg font-bold mb-2">PAYMENT METHOD TOTALS</h2>
+    <div id="payment-totals" class="text-sm"></div>
+  </div>
+</section>
 
-<!-- Orders Table -->
-<div class="overflow-x-auto bg-white p-4 pixel-shadow rounded mb-8">
-  <table class="w-full border-collapse table-auto text-sm">
-    <thead class="bg-pixel-purple text-white">
-      <tr>
-        <th class="p-3 border border-pixel-dark"><input type="checkbox" id="select-all"></th>
-        <th class="p-3 border border-pixel-dark">Date</th>
-        <th class="p-3 border border-pixel-dark">Full Name</th>
-        <th class="p-3 border border-pixel-dark">Qty</th>
-        <th class="p-3 border border-pixel-dark">Type</th>
-        <th class="p-3 border border-pixel-dark">Payment</th>
-        <th class="p-3 border border-pixel-dark">Txn ID</th>
-        <th class="p-3 border border-pixel-dark">Amount</th>
-        <th class="p-3 border border-pixel-dark">Actions</th>
-      </tr>
-    </thead>
-    <tbody id="orders-list">
-      <tr><td colspan="9" class="text-center py-4">Loading...</td></tr>
-    </tbody>
-  </table>
+<section class="mb-8 p-6 pixel-shadow bg-white rounded-lg">
+<h2 class="text-2xl font-bold mb-4">ADD NEW ORDER / INVOICE</h2>
+<form id="order-form" class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+  <div><label class="block text-sm font-medium mb-1">DATE</label><input type="date" id="new-order-date" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple"></div>
+  <div><label class="block text-sm font-medium mb-1">QUANTITY</label><input type="number" id="new-quantity" placeholder="1" value="1" min="1" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple text-center"></div>
+  <div class="col-span-2"><label class="block text-sm font-medium mb-1">FULL NAME</label><input type="text" id="new-full-name" placeholder="Client's Full Name" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple"></div>
+  <div class="col-span-2"><label class="block text-sm font-medium mb-1">TYPE</label><select id="new-type" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple">
+  <option value="Keychain Long">Keychain Long</option>
+  <option value="Keychain Rectangle">Keychain Rectangle</option>
+  <option value="Invitation">Invitation</option>
+  <option value="Print (Short)">Print (Short)</option>
+  <option value="Print (Long)">Print (Long)</option>
+  <option value="Print (A4)">Print (A4)</option>
+  <option value="Print (Photo)">Print (Photo)</option>
+  <option value="Rush Id">Rush Id</option>
+  <option value="Ref Magnet">Ref Magnet</option>
+  <option value="Others" selected>Others</option>
+  </select></div>
+  <div class="col-span-2"><label class="block text-sm font-medium mb-1">Transaction/Invoice Number</label><input type="text" id="new-txn-id" readonly class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple"></div>
+  <div class="col-span-2"><label class="block text-sm font-medium mb-1">PAYMENT METHOD</label><select id="new-payment-method" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple">
+    <option value="Gcash">Gcash</option>
+    <option value="Cash" selected>Cash</option>
+  </select></div>
+  <div><label class="block text-sm font-medium mb-1">TOTAL (₱)</label><input type="number" id="new-amount" placeholder="500.00" min="0.01" step="0.01" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple text-right"></div>
+  <button type="button" onclick="submitNewOrder()" class="col-span-1 md:col-span-1 w-full px-6 py-2 bg-pixel-purple text-white font-bold rounded-sm hover:bg-violet-700 transition-colors pixel-btn">SAVE</button>
+</form>
+</section>
+
+<section class="p-4 md:p-6 pixel-shadow bg-white rounded-lg overflow-x-auto">
+<div class="flex flex-col md:flex-row justify-between items-center mb-4">
+  <h2 class="text-2xl font-bold mb-2 md:mb-0">ALL INVOICES</h2>
+  <div class="flex items-center space-x-4">
+    <label class="flex items-center space-x-2 text-sm font-bold">
+      <input type="checkbox" id="select-all" class="form-checkbox h-4 w-4 text-pixel-purple border-pixel-dark rounded cursor-pointer">
+      <span>Select All</span>
+    </label>
+  </div>
 </div>
+<table class="min-w-full border-collapse border border-pixel-dark text-sm">
+  <thead>
+  <tr class="bg-pixel-purple text-white">
+    <th class="p-3 border border-pixel-dark w-10">SEL.</th>
+    <th class="p-3 border border-pixel-dark">DATE</th>
+    <th class="p-3 border border-pixel-dark">FULL NAME</th>
+    <th class="p-3 border border-pixel-dark">QTY</th>
+    <th class="p-3 border border-pixel-dark">TYPE</th>
+    <th class="p-3 border border-pixel-dark">PAYMENT</th>
+    <th class="p-3 border border-pixel-dark">INVOICE/TXN #</th>
+    <th class="p-3 border border-pixel-dark">TOTAL (₱)</th>
+    <th class="p-3 border border-pixel-dark w-36">ACTIONS</th>
+  </tr>
+  </thead>
+  <tbody id="orders-list"></tbody>
+</table>
+<p class="mt-4 text-sm text-gray-500">Note: All fields in the table are editable and saved instantly.</p>
+</section>
 </div>
 </body>
 </html>
-
