@@ -28,10 +28,14 @@
   const paymentOptions = ['Gcash', 'Cash', 'Maya', 'Bank transfer'];
   let allOrdersData = [];
   let latestTxnNumber = 0;
+  let cashOutData = { 'Gcash':0, 'Cash':0, 'Maya':0, 'Bank transfer':0 }; // track cash-outs
 
   function loadOrdersFromStorage() {
     const data = localStorage.getItem('printbabe_sales');
     allOrdersData = data ? JSON.parse(data) : [];
+    const cashOutStored = localStorage.getItem('printbabe_cash_out');
+    cashOutData = cashOutStored ? JSON.parse(cashOutStored) : { 'Gcash':0, 'Cash':0, 'Maya':0, 'Bank transfer':0 };
+
     latestTxnNumber = 0;
     allOrdersData.forEach(order => {
       const match = order.txnId ? order.txnId.match(/(\d+)$/) : null;
@@ -42,10 +46,12 @@
     calculateTotals(allOrdersData);
     calculateCategoryTotals(allOrdersData);
     calculateMonthlySales(allOrdersData);
+    calculatePaymentTotals(allOrdersData);
   }
 
   function saveOrdersToStorage() {
     localStorage.setItem('printbabe_sales', JSON.stringify(allOrdersData));
+    localStorage.setItem('printbabe_cash_out', JSON.stringify(cashOutData));
   }
 
   function generateNextTxnId() {
@@ -62,18 +68,13 @@
     document.getElementById('total-orders').textContent = totalQuantity.toLocaleString('en-PH');
   }
 
-  // --- CALCULATE PER CATEGORY & RANKING ---
   function calculateCategoryTotals(orders) {
     const categoryTotals = {};
     typeOptions.forEach(type => categoryTotals[type] = 0);
-
     orders.forEach(order => {
       if(order.type in categoryTotals) categoryTotals[order.type] += parseInt(order.quantity);
     });
-
-    // Sort by quantity descending
     const sorted = Object.entries(categoryTotals).sort((a,b)=>b[1]-a[1]);
-
     const container = document.getElementById('category-totals');
     container.innerHTML = '';
     sorted.forEach(([type, qty], index) => {
@@ -85,19 +86,15 @@
     });
   }
 
-  // --- CALCULATE MONTHLY SALES ---
   function calculateMonthlySales(orders) {
     const monthTotals = {};
     orders.forEach(order => {
-      const month = order.orderDate ? order.orderDate.slice(0,7) : null; // YYYY-MM
+      const month = order.orderDate ? order.orderDate.slice(0,7) : null;
       if(!month) return;
       if(!monthTotals[month]) monthTotals[month] = 0;
       monthTotals[month] += parseFloat(order.amount);
     });
-
-    // Sort months descending by total
     const sorted = Object.entries(monthTotals).sort((a,b)=>b[1]-a[1]);
-
     const container = document.getElementById('monthly-sales');
     container.innerHTML = '';
     sorted.forEach(([month, total]) => {
@@ -110,7 +107,37 @@
     });
   }
 
-  // --- CREATE SELECT HTML ---
+  function calculatePaymentTotals(orders){
+    const totals = {};
+    paymentOptions.forEach(p => totals[p]=0);
+    orders.forEach(o=>{
+      if(o.paymentMethod in totals) totals[o.paymentMethod]+=parseFloat(o.amount);
+    });
+    const container = document.getElementById('payment-totals');
+    container.innerHTML = '';
+    paymentOptions.forEach(p=>{
+      const row = document.createElement('div');
+      row.className = "flex justify-between border-b border-pixel-dark py-1";
+      const remaining = totals[p]-cashOutData[p];
+      row.innerHTML = `<span>${p}</span><span>₱ ${totals[p].toLocaleString('en-PH',{minimumFractionDigits:2})} <span class="text-red-500">(-₱ ${cashOutData[p].toLocaleString('en-PH',{minimumFractionDigits:2})})</span> = ₱ ${remaining.toLocaleString('en-PH',{minimumFractionDigits:2})}</span>
+      <button onclick="cashOut('${p}')" class="ml-2 px-2 py-1 bg-yellow-400 text-black font-bold rounded-sm hover:bg-yellow-500 text-xs pixel-btn">CASH OUT</button>`;
+      container.appendChild(row);
+    });
+  }
+
+  function cashOut(method){
+    const amount = prompt(`Enter amount to cash out for ${method}:`);
+    const num = parseFloat(amount);
+    if(isNaN(num) || num<=0){
+      alert("Invalid amount!");
+      return;
+    }
+    cashOutData[method]+=num;
+    saveOrdersToStorage();
+    calculatePaymentTotals(allOrdersData);
+    showMessage(`₱ ${num.toLocaleString('en-PH',{minimumFractionDigits:2})} cashed out from ${method}!`,'success');
+  }
+
   function createSelectHtml(field, index, selectedValue, options) {
     let optionsHtml = options.map(opt => `<option value="${opt}" ${opt===selectedValue?'selected':''}>${opt}</option>`).join('');
     return `<td class="p-3 border border-pixel-dark" style="box-shadow: 2px 2px 0 0 rgba(75, 0, 130, 0.4);">
@@ -120,7 +147,6 @@
     </td>`;
   }
 
-  // --- RENDER ORDERS TABLE ---
   function renderOrders(orders) {
     const list = document.getElementById('orders-list');
     list.innerHTML = '';
@@ -142,7 +168,6 @@
         <td class="p-3 border border-pixel-dark"><input type="text" data-field="txnId" data-index="${index}" value="${order.txnId}" class="w-full bg-transparent outline-none edit-input" readonly></td>
         <td class="p-3 border border-pixel-dark"><input type="number" data-field="amount" data-index="${index}" value="${order.amount}" min="0.01" step="0.01" class="w-full bg-transparent outline-none edit-input text-right"></td>
         <td class="p-3 border border-pixel-dark text-center flex flex-col space-y-1 items-center justify-center">
-          <button onclick="downloadInvoice(${index})" class="text-xs font-bold bg-blue-500 text-white px-2 py-1 rounded-sm shadow-md hover:bg-blue-600">INVOICE</button>
           <button onclick="deleteOrder(${index})" class="text-xs font-bold bg-red-500 text-white px-2 py-1 rounded-sm shadow-md hover:bg-red-600">DELETE</button>
         </td>
       `;
@@ -152,7 +177,6 @@
     document.querySelectorAll('.edit-input').forEach(input=>{
       input.addEventListener('change', handleEditChange);
     });
-
     document.getElementById('select-all').addEventListener('change', toggleSelectAll);
   }
 
@@ -182,6 +206,7 @@
     calculateTotals(allOrdersData);
     calculateCategoryTotals(allOrdersData);
     calculateMonthlySales(allOrdersData);
+    calculatePaymentTotals(allOrdersData);
     document.getElementById('order-form').reset();
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('new-order-date').value = today;
@@ -202,6 +227,7 @@
     calculateTotals(allOrdersData);
     calculateCategoryTotals(allOrdersData);
     calculateMonthlySales(allOrdersData);
+    calculatePaymentTotals(allOrdersData);
   }
 
   function deleteOrder(index){
@@ -212,6 +238,7 @@
     calculateTotals(allOrdersData);
     calculateCategoryTotals(allOrdersData);
     calculateMonthlySales(allOrdersData);
+    calculatePaymentTotals(allOrdersData);
     showMessage("Order deleted!", "success");
   }
 
@@ -269,6 +296,13 @@
   </div>
 </section>
 
+<section class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8">
+  <div class="pixel-shadow bg-white p-4 rounded-lg">
+    <h2 class="text-lg font-bold mb-2">PAYMENT METHOD TOTALS</h2>
+    <div id="payment-totals" class="text-sm"></div>
+  </div>
+</section>
+
 <section class="mb-8 p-6 pixel-shadow bg-white rounded-lg">
 <h2 class="text-2xl font-bold mb-4">ADD NEW ORDER / INVOICE</h2>
 <form id="order-form" class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
@@ -307,7 +341,6 @@
       <input type="checkbox" id="select-all" class="form-checkbox h-4 w-4 text-pixel-purple border-pixel-dark rounded cursor-pointer">
       <span>Select All</span>
     </label>
-    <button onclick="downloadAllAsCSV()" class="px-3 py-1 text-sm bg-green-600 text-white font-bold rounded-sm hover:bg-green-700 transition-colors pixel-btn">DOWNLOAD ALL (CSV)</button>
   </div>
 </div>
 <table class="min-w-full border-collapse border border-pixel-dark text-sm">
