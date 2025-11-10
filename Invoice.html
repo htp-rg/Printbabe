@@ -252,42 +252,51 @@
     setTimeout(()=>{box.style.opacity='0';},3000);
   }
 
-  function downloadInvoice(index){
+ async function downloadInvoice(index){
     const { jsPDF } = window.jspdf;
     const order = allOrdersData[index];
-    const doc = new jsPDF();
+    const doc = new jsPDF({unit:'pt', format:'a4'});
+    const margin = 40;
+    const startY = 80;
 
-    doc.setFont('Courier','normal');
-    doc.setFontSize(18);
-    doc.text('PHOTO & PRINTBABE', 105, 20, null, null, 'center');
+    
+const img = new Image();
+img.src = '1.jpg';
+await img.decode();
+doc.addImage(img, 'JPEG', 200, 10, 100, 50);
+
+    doc.setFont('DotGothic16');
+    doc.setFontSize(20);
+    doc.setTextColor('#4B0082');
+    doc.text(PRINTBABE', margin, 40);
     doc.setFontSize(12);
-    doc.text(`Invoice: ${order.txnId}`, 20, 40);
-    doc.text(`Date: ${order.orderDate}`, 20, 48);
-    doc.text(`Client: ${order.fullName}`, 20, 56);
-    doc.text(`Payment: ${order.paymentMethod}`, 20, 64);
+    doc.text(`Invoice: ${order.txnId}`, margin, startY);
+    doc.text(`Date: ${order.orderDate}`, margin, startY+16);
+    doc.text(`Client: ${order.fullName}`, margin, startY+32);
+    doc.text(`Payment: ${order.paymentMethod}`, margin, startY+48);
+    
+    doc.text('------------------------------', margin, startY+60);
+    doc.text('ITEM', margin, startY+76);
+    doc.text('QTY', margin+150, startY+76);
+    doc.text('PRICE', margin+250, startY+76);
+    doc.text('TOTAL', margin+350, startY+76);
+    doc.text('------------------------------', margin, startY+88);
 
-    doc.setFontSize(14);
-    doc.text('--------------------------',20,74);
-    doc.text('ITEM',20,82);
-    doc.text('QTY',80,82);
-    doc.text('PRICE',120,82);
-    doc.text('TOTAL',160,82);
-    doc.text('--------------------------',20,90);
+    const formattedAmount = '₱ ' + Number(order.amount).toFixed(2);
+    doc.text(order.type, margin, startY+104);
+    doc.text(order.quantity.toString(), margin+150, startY+104);
+    doc.text(formattedAmount, margin+250, startY+104);
+    doc.text(formattedAmount, margin+350, startY+104);
 
-    doc.text(order.type,20,100);
-    doc.text(String(order.quantity),80,100);
-    doc.text(`₱ ${order.amount.toLocaleString('en-PH',{minimumFractionDigits:2})}`,120,100);
-    doc.text(`₱ ${order.amount.toLocaleString('en-PH',{minimumFractionDigits:2})}`,160,100);
-    doc.text('--------------------------',20,110);
-    doc.text(`TOTAL AMOUNT: ₱ ${order.amount.toLocaleString('en-PH',{minimumFractionDigits:2})}`,20,120);
-    if(cashOutData[order.paymentMethod]){
-      doc.setTextColor(255,0,0);
-      doc.text(`CASHED OUT: ₱ ${cashOutData[order.paymentMethod].toLocaleString('en-PH',{minimumFractionDigits:2})}`,20,130);
-      doc.setTextColor(0,0,0);
+    doc.text('------------------------------', margin, startY+120);
+    doc.text(`TOTAL AMOUNT: ${formattedAmount}`, margin, startY+136);
+
+    // Cash out info if applicable
+    if(cashOutData[order.paymentMethod] && cashOutData[order.paymentMethod]>0){
+      doc.text(`Cash Out (${order.paymentMethod}): ₱ ${cashOutData[order.paymentMethod].toFixed(2)}`, margin, startY+152);
     }
 
     doc.save(`${order.txnId}.pdf`);
-    showMessage("Invoice downloaded!", "success");
   }
 
   document.addEventListener('DOMContentLoaded',()=>{
