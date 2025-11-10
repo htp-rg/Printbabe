@@ -8,7 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-  // --- PIXEL STYLES & CONFIG ---
   tailwind.config = {
     theme: {
       extend: {
@@ -30,11 +29,9 @@
   let allOrdersData = [];
   let latestTxnNumber = 0;
 
-  // --- LOCAL STORAGE FUNCTIONS ---
   function loadOrdersFromStorage() {
     const data = localStorage.getItem('printbabe_sales');
     allOrdersData = data ? JSON.parse(data) : [];
-    // Find latest txn number
     latestTxnNumber = 0;
     allOrdersData.forEach(order => {
       const match = order.txnId ? order.txnId.match(/(\d+)$/) : null;
@@ -43,13 +40,14 @@
     generateNextTxnId();
     renderOrders(allOrdersData);
     calculateTotals(allOrdersData);
+    calculateCategoryTotals(allOrdersData);
+    calculateMonthlySales(allOrdersData);
   }
 
   function saveOrdersToStorage() {
     localStorage.setItem('printbabe_sales', JSON.stringify(allOrdersData));
   }
 
-  // --- TXN ID GENERATOR ---
   function generateNextTxnId() {
     const nextNumber = latestTxnNumber + 1;
     const year = new Date().getFullYear();
@@ -57,12 +55,59 @@
     document.getElementById('new-txn-id').value = `PB-${year}-${formattedNumber}`;
   }
 
-  // --- CALCULATE TOTALS ---
   function calculateTotals(orders) {
     const totalSales = orders.reduce((sum, order) => sum + parseFloat(order.amount || 0), 0);
     const totalQuantity = orders.reduce((sum, order) => sum + parseInt(order.quantity || 1), 0);
     document.getElementById('total-sales').textContent = `₱ ${totalSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
     document.getElementById('total-orders').textContent = totalQuantity.toLocaleString('en-PH');
+  }
+
+  // --- CALCULATE PER CATEGORY & RANKING ---
+  function calculateCategoryTotals(orders) {
+    const categoryTotals = {};
+    typeOptions.forEach(type => categoryTotals[type] = 0);
+
+    orders.forEach(order => {
+      if(order.type in categoryTotals) categoryTotals[order.type] += parseInt(order.quantity);
+    });
+
+    // Sort by quantity descending
+    const sorted = Object.entries(categoryTotals).sort((a,b)=>b[1]-a[1]);
+
+    const container = document.getElementById('category-totals');
+    container.innerHTML = '';
+    sorted.forEach(([type, qty], index) => {
+      const rank = index + 1;
+      const row = document.createElement('div');
+      row.className = "flex justify-between border-b border-pixel-dark py-1";
+      row.innerHTML = `<span>${rank}. ${type}</span><span>${qty}</span>`;
+      container.appendChild(row);
+    });
+  }
+
+  // --- CALCULATE MONTHLY SALES ---
+  function calculateMonthlySales(orders) {
+    const monthTotals = {};
+    orders.forEach(order => {
+      const month = order.orderDate ? order.orderDate.slice(0,7) : null; // YYYY-MM
+      if(!month) return;
+      if(!monthTotals[month]) monthTotals[month] = 0;
+      monthTotals[month] += parseFloat(order.amount);
+    });
+
+    // Sort months descending by total
+    const sorted = Object.entries(monthTotals).sort((a,b)=>b[1]-a[1]);
+
+    const container = document.getElementById('monthly-sales');
+    container.innerHTML = '';
+    sorted.forEach(([month, total]) => {
+      const row = document.createElement('div');
+      row.className = "flex justify-between border-b border-pixel-dark py-1";
+      const date = new Date(month + '-01'); 
+      const monthName = date.toLocaleString('en-US',{month:'long', year:'numeric'});
+      row.innerHTML = `<span>${monthName}</span><span>₱ ${total.toLocaleString('en-PH',{minimumFractionDigits:2})}</span>`;
+      container.appendChild(row);
+    });
   }
 
   // --- CREATE SELECT HTML ---
@@ -104,12 +149,10 @@
       list.appendChild(row);
     });
 
-    // Add event listeners for direct editing
     document.querySelectorAll('.edit-input').forEach(input=>{
       input.addEventListener('change', handleEditChange);
     });
 
-    // Select All
     document.getElementById('select-all').addEventListener('change', toggleSelectAll);
   }
 
@@ -118,7 +161,6 @@
     document.querySelectorAll('.select-checkbox').forEach(cb => cb.checked = isChecked);
   }
 
-  // --- ADD NEW ORDER ---
   function submitNewOrder(){
     const date = document.getElementById('new-order-date').value.trim();
     const quantity = parseInt(document.getElementById('new-quantity').value);
@@ -133,13 +175,13 @@
       return;
     }
 
-    allOrdersData.push({
-      txnId, orderDate: date, quantity, type, paymentMethod, amount, fullName
-    });
+    allOrdersData.push({txnId, orderDate: date, quantity, type, paymentMethod, amount, fullName});
     latestTxnNumber++;
     saveOrdersToStorage();
     renderOrders(allOrdersData);
     calculateTotals(allOrdersData);
+    calculateCategoryTotals(allOrdersData);
+    calculateMonthlySales(allOrdersData);
     document.getElementById('order-form').reset();
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('new-order-date').value = today;
@@ -147,97 +189,32 @@
     showMessage("Order added successfully!", "success");
   }
 
-  // --- HANDLE EDIT ---
   function handleEditChange(event){
     const input = event.target;
     const index = parseInt(input.getAttribute('data-index'));
     const field = input.getAttribute('data-field');
     let value = input.value;
-
     if(field==='amount') value=parseFloat(value);
     if(field==='quantity') value=parseInt(value);
-
     if(isNaN(value) && (field==='amount'||field==='quantity')) return;
-
     allOrdersData[index][field] = value;
     saveOrdersToStorage();
     calculateTotals(allOrdersData);
+    calculateCategoryTotals(allOrdersData);
+    calculateMonthlySales(allOrdersData);
   }
 
-  // --- DELETE ORDER ---
   function deleteOrder(index){
     if(!confirm("Delete this order?")) return;
     allOrdersData.splice(index,1);
     saveOrdersToStorage();
     renderOrders(allOrdersData);
     calculateTotals(allOrdersData);
+    calculateCategoryTotals(allOrdersData);
+    calculateMonthlySales(allOrdersData);
     showMessage("Order deleted!", "success");
   }
 
-  // --- INVOICE PDF ---
-  function downloadInvoice(index){
-    const order = allOrdersData[index];
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    let y=20;
-    doc.setFontSize(22);
-    doc.text("INVOICE - Photo and Printbabe",105,y,null,null,"center");
-    y+=10;
-    doc.setFontSize(10);
-    doc.text("Date Generated: " + new Date().toLocaleDateString('en-PH'),105,y,null,null,"center");
-    y+=20;
-    doc.setFontSize(12);
-    doc.text(`Invoice # : ${order.txnId}`,20,y); y+=7;
-    doc.text(`Order Date : ${order.orderDate}`,20,y); y+=7;
-    doc.text(`Client Name : ${order.fullName}`,20,y); y+=7;
-    doc.text(`Payment Via : ${order.paymentMethod}`,20,y); y+=15;
-    // Table Header
-    doc.text("Item Description",20,y);
-    doc.text("Qty",120,y);
-    doc.text("Unit Price",140,y);
-    doc.text("Total",180,y);
-    y+=5;
-    doc.setLineWidth(0.5); doc.line(20,y,190,y); y+=10;
-    // Table Row
-    doc.text(order.type,20,y);
-    doc.text(order.quantity.toString(),120,y);
-    const unitPrice = order.amount/order.quantity;
-    doc.text(`₱ ${unitPrice.toLocaleString('en-PH',{minimumFractionDigits:2})}`,140,y);
-    doc.text(`₱ ${order.amount.toLocaleString('en-PH',{minimumFractionDigits:2})}`,180,y);
-    y+=10;
-    doc.setLineWidth(0.2); doc.line(20,y,190,y); y+=10;
-    doc.setFontSize(14);
-    doc.text("GRAND TOTAL:",140,y);
-    doc.text(`₱ ${order.amount.toLocaleString('en-PH',{minimumFractionDigits:2})}`,180,y);
-    y+=20;
-    doc.setFontSize(10);
-    doc.text("Thank you for your business!",105,y,null,null,"center");
-    doc.save(`Invoice_${order.txnId}.pdf`);
-    showMessage(`Invoice for ${order.txnId} downloaded!`,"success");
-  }
-
-  // --- DOWNLOAD ALL CSV ---
-  function downloadAllAsCSV(){
-    if(allOrdersData.length===0){showMessage("No data to download.","warning"); return;}
-    const headers = ['Transaction ID','Order Date','Full Name','Type','Quantity','Payment Method','Total Amount (PHP)'];
-    const csvRows=[headers.join(',')];
-    allOrdersData.forEach(order=>{
-      const values=[`"${order.txnId}"`,`"${order.orderDate}"`,`"${order.fullName}"`,`"${order.type}"`,order.quantity,`"${order.paymentMethod}"`,order.amount];
-      csvRows.push(values.join(','));
-    });
-    const blob=new Blob([csvRows.join('\n')],{type:'text/csv;charset=utf-8;'});
-    const link=document.createElement('a');
-    const url=URL.createObjectURL(blob);
-    link.setAttribute('href',url);
-    link.setAttribute('download','Printbabe_Sales_Data.csv');
-    link.style.visibility='hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showMessage("Sales data downloaded as CSV!","success");
-  }
-
-  // --- MESSAGE BOX ---
   function showMessage(msg,type){
     const box = document.getElementById('message-box');
     box.textContent = msg;
@@ -278,6 +255,17 @@
   <div class="pixel-shadow bg-white p-6 rounded-lg">
     <p class="text-lg font-bold">TOTAL ITEMS SOLD</p>
     <p id="total-orders" class="text-5xl mt-2 text-pixel-purple">0</p>
+  </div>
+</section>
+
+<section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+  <div class="pixel-shadow bg-white p-4 rounded-lg">
+    <h2 class="text-lg font-bold mb-2">ITEMS SOLD PER CATEGORY (Ranking)</h2>
+    <div id="category-totals" class="text-sm"></div>
+  </div>
+  <div class="pixel-shadow bg-white p-4 rounded-lg">
+    <h2 class="text-lg font-bold mb-2">SALES PER MONTH (Highest First)</h2>
+    <div id="monthly-sales" class="text-sm"></div>
   </div>
 </section>
 
@@ -336,6 +324,7 @@
 </table>
 <p class="mt-4 text-sm text-gray-500">Note: All fields in the table are editable and saved instantly.</p>
 </section>
+
 </div>
 </body>
 </html>
