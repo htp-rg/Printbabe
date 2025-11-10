@@ -24,7 +24,7 @@
   };
 
   const pixelBoxShadow = '4px 4px 0 0 rgba(75, 0, 130, 0.8)';
-  const typeOptions = ['Keychain Long', 'Keychain Rectangle', 'Invitation', 'Print', 'Ref Magnet', 'Others'];
+  const typeOptions = ['Keychain Long', 'Keychain Rectangle', 'Invitation', 'Print (Short)', 'Print (Long)', 'Print (A4)','Print (Photo)','Rush Id', 'Ref Magnet', 'Others'];
   const paymentOptions = ['Gcash', 'Cash', 'Maya', 'Bank transfer'];
   let allOrdersData = [];
   let latestTxnNumber = 0;
@@ -276,12 +276,16 @@
   <div><label class="block text-sm font-medium mb-1">QUANTITY</label><input type="number" id="new-quantity" placeholder="1" value="1" min="1" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple text-center"></div>
   <div class="col-span-2"><label class="block text-sm font-medium mb-1">FULL NAME</label><input type="text" id="new-full-name" placeholder="Client's Full Name" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple"></div>
   <div class="col-span-2"><label class="block text-sm font-medium mb-1">TYPE</label><select id="new-type" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple">
-    <option value="Keychain Long">Keychain Long</option>
-    <option value="Keychain Rectangle">Keychain Rectangle</option>
-    <option value="Invitation">Invitation</option>
-    <option value="Print">Print</option>
-    <option value="Ref Magnet">Ref Magnet</option>
-    <option value="Others" selected>Others</option>
+  <option value="Keychain Long">Keychain Long</option>
+  <option value="Keychain Rectangle">Keychain Rectangle</option>
+  <option value="Invitation">Invitation</option>
+  <option value="Print (Short)">Print (Short)</option>
+  <option value="Print (Long)">Print (Long)</option>
+  <option value="Print (A4)">Print (A4)</option>
+  <option value="Print (Photo)">Print (Photo)</option>
+  <option value="Rush Id">Rush Id</option>
+  <option value="Ref Magnet">Ref Magnet</option>
+  <option value="Others" selected>Others</option>
   </select></div>
   <div class="col-span-2"><label class="block text-sm font-medium mb-1">Transaction/Invoice Number</label><input type="text" id="new-txn-id" readonly class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple"></div>
   <div class="col-span-2"><label class="block text-sm font-medium mb-1">PAYMENT METHOD</label><select id="new-payment-method" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple">
