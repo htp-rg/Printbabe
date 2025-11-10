@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Printbabe - Sales Tracker</title>
+<title>Photo and Printbabe - Sales Tracker</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -100,8 +100,8 @@
     const ordersRef = getCollectionRef();
     if (!ordersRef) return;
 
-    // Sort data by creation date (latest first) to get the highest txnId
-    const q = query(ordersRef, orderBy("txnId", "desc")); // Order by txnId to find the latest
+    // Sort data by txnId descending to get the highest txnId
+    const q = query(ordersRef, orderBy("txnId", "desc")); 
     onSnapshot(q, (snapshot) => {
       const orders = [];
       let highestTxnNum = 0;
@@ -180,8 +180,8 @@
       row.innerHTML = `
         <td class="p-3 border border-pixel-dark text-center" style="box-shadow: 2px 2px 0 0 rgba(75, 0, 130, 0.4);">
           <input type="checkbox" data-id="${order.id}" class="select-checkbox form-checkbox h-5 w-5 text-pixel-purple border-pixel-dark rounded cursor-pointer">
-          </td>
-          <td class="p-3 border border-pixel-dark" style="box-shadow: 2px 2px 0 0 rgba(75, 0, 130, 0.4);">
+        </td>
+        <td class="p-3 border border-pixel-dark" style="box-shadow: 2px 2px 0 0 rgba(75, 0, 130, 0.4);">
           <input type="date" data-field="orderDate" data-id="${order.id}" value="${order.orderDate}" class="w-full bg-transparent outline-none focus:bg-pixel-lavender edit-input" placeholder="Date">
         </td>
         <td class="p-3 border border-pixel-dark" style="box-shadow: 2px 2px 0 0 rgba(75, 0, 130, 0.4);">
@@ -197,7 +197,7 @@
         </td>
         <td class="p-3 border border-pixel-dark" style="box-shadow: 2px 2px 0 0 rgba(75, 0, 130, 0.4);">
           <input type="number" data-field="amount" data-id="${order.id}" value="${order.amount}" class="w-full bg-transparent outline-none focus:bg-pixel-lavender edit-input text-right" placeholder="0.00">
-        </td>
+          </td>
         <td class="p-3 border border-pixel-dark text-center flex flex-col space-y-1 items-center justify-center" style="box-shadow: 2px 2px 0 0 rgba(75, 0, 130, 0.4);">
           <button onclick="window.downloadInvoice('${order.id}')" class="text-xs font-bold bg-blue-500 text-white px-2 py-1 rounded-sm shadow-md hover:bg-blue-600 transition-colors" style="box-shadow: 2px 2px 0 0 #2563eb;"> INVOICE </button>
           <button onclick="window.deleteOrder('${order.id}')" class="text-xs font-bold bg-red-500 text-white px-2 py-1 rounded-sm shadow-md hover:bg-red-600 transition-colors" style="box-shadow: 2px 2px 0 0 #b91c1c;"> DELETE </button>
@@ -227,14 +227,14 @@
     // New Fields
     const date = document.getElementById('new-order-date').value.trim();
     const quantity = parseInt(document.getElementById('new-quantity').value);
-    const fullName = document.getElementById('new-full-name').value.trim(); // NEW
+    const fullName = document.getElementById('new-full-name').value.trim(); 
     const type = document.getElementById('new-type').value;
     const paymentMethod = document.getElementById('new-payment-method').value;
     // Existing/Total Fields
     const txnId = document.getElementById('new-txn-id').value.trim();
     const amount = parseFloat(document.getElementById('new-amount').value);
 
-    if (!date || !txnId || isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity < 1 || !fullName) { // Added fullName validation
+    if (!date || !txnId || isNaN(amount) || amount <= 0 || isNaN(quantity) || quantity < 1 || !fullName) { 
       showMessage("Please fill in Date, Full Name, Txn #, Quantity, and Total Amount (₱).", 'warning');
       return;
     }
@@ -481,8 +481,7 @@
 <div id="message-box" class="fixed top-0 left-1/2 -translate-x-1/2 mt-4 z-50 opacity-0" style="min-width: 300px;"></div>
 <div class="max-w-6xl mx-auto">
   <header class="text-center mb-8 pixel-shadow bg-pixel-purple text-white p-4 rounded-lg flex flex-col items-center justify-center">
-    
-    <img src="1.jpg" alt="Printbabe Logo" class="h-20 w-20 md:h-24 md:w-24 object-contain mb-2 **rounded-full border-4 border-white**">
+        <img src="1.jpg" alt="Printbabe Logo" class="h-20 w-20 md:h-24 md:w-24 object-contain mb-2 **rounded-full**">
     
     <h1 class="text-3xl md:text-5xl tracking-widest">PHOTO & PRINTBABE</h1>
     <p class="text-sm mt-2">Sales and Order Management System - PH Peso</p>
@@ -506,12 +505,12 @@
       <div class="col-span-1 md:col-span-1">
         <label for="new-order-date" class="block text-sm font-medium mb-1">DATE</label>
         <input type="date" id="new-order-date" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple" required style="box-shadow: 2px 2px 0 0 rgba(75, 0, 130, 0.4);">
-      </div>
-      <div>
+        </div>
+        <div>
         <label for="new-quantity" class="block text-sm font-medium mb-1">QUANTITY</label>
         <input type="number" id="new-quantity" placeholder="1" value="1" min="1" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple text-center" required style="box-shadow: 2px 2px 0 0 rgba(75, 0, 130, 0.4);">
-      </div>
-      <div class="col-span-1 md:col-span-2">
+        </div>
+        <div class="col-span-1 md:col-span-2">
         <label for="new-full-name" class="block text-sm font-medium mb-1">FULL NAME</label>
         <input type="text" id="new-full-name" placeholder="Client's Full Name" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple" required style="box-shadow: 2px 2px 0 0 rgba(75, 0, 130, 0.4);">
         </div>
@@ -564,7 +563,8 @@
       <tr class="bg-pixel-purple text-white">
         <th class="p-3 border border-pixel-dark w-10">SEL.</th>
         <th class="p-3 border border-pixel-dark text-left">DATE (Edit)</th>
-        <th class="p-3 border border-pixel-dark text-left">FULL NAME (Edit)</th> <th class="p-3 border border-pixel-dark text-center">QTY (Edit)</th>
+        <th class="p-3 border border-pixel-dark text-left">FULL NAME (Edit)</th> 
+        <th class="p-3 border border-pixel-dark text-center">QTY (Edit)</th>
         <th class="p-3 border border-pixel-dark text-left">TYPE (Edit)</th>
         <th class="p-3 border border-pixel-dark text-left">PAYMENT (Edit)</th>
         <th class="p-3 border border-pixel-dark text-left">INVOICE/TXN # (Edit)</th>
