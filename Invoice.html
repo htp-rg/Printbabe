@@ -25,10 +25,10 @@
 
   const pixelBoxShadow = '4px 4px 0 0 rgba(75, 0, 130, 0.8)';
   const typeOptions = ['Keychain Long', 'Keychain Rectangle', 'Invitation', 'Print (Short)', 'Print (Long)', 'Print (A4)','Print (Photo)','Rush Id', 'Ref Magnet', 'Others'];
-  const paymentOptions = ['Gcash', 'Cash', 'Maya', 'Bank transfer'];
+  const paymentOptions = ['Gcash', 'Cash'];
   let allOrdersData = [];
   let latestTxnNumber = 0;
-  let cashOutData = { 'Gcash':0, 'Cash':0, 'Maya':0, 'Bank transfer':0 }; // track cash-outs
+  let cashOutData = { 'Gcash':0, 'Cash':0 }; // track cash-outs
 
   function loadOrdersFromStorage() {
     const data = localStorage.getItem('printbabe_sales');
@@ -325,8 +325,6 @@
   <div class="col-span-2"><label class="block text-sm font-medium mb-1">PAYMENT METHOD</label><select id="new-payment-method" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple">
     <option value="Gcash">Gcash</option>
     <option value="Cash" selected>Cash</option>
-    <option value="Maya">Maya</option>
-    <option value="Bank transfer">Bank transfer</option>
   </select></div>
   <div><label class="block text-sm font-medium mb-1">TOTAL (₱)</label><input type="number" id="new-amount" placeholder="500.00" min="0.01" step="0.01" class="w-full p-2 border-2 border-pixel-dark rounded-sm bg-pixel-lavender focus:bg-white focus:outline-pixel-purple text-right"></div>
   <button type="button" onclick="submitNewOrder()" class="col-span-1 md:col-span-1 w-full px-6 py-2 bg-pixel-purple text-white font-bold rounded-sm hover:bg-violet-700 transition-colors pixel-btn">SAVE</button>
