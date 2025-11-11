@@ -147,7 +147,7 @@
     </td>`;
   }
 
-  function renderOrders(orders) {
+function renderOrders(orders) {
     const list = document.getElementById('orders-list');
     list.innerHTML = '';
     if(orders.length===0){
@@ -159,7 +159,9 @@
       const row = document.createElement('tr');
       row.className = "bg-white hover:bg-pixel-lavender transition-colors";
       row.innerHTML = `
-        <td class="p-3 border border-pixel-dark text-center"><input type="checkbox" data-index="${index}" class="select-checkbox form-checkbox h-5 w-5 text-pixel-purple border-pixel-dark rounded cursor-pointer"></td>
+        <td class="p-3 border border-pixel-dark text-center">
+          <input type="checkbox" data-index="${index}" class="paid-checkbox form-checkbox h-5 w-5 text-pixel-purple border-pixel-dark rounded cursor-pointer" ${order.paid?'checked':''}>
+        </td>
         <td class="p-3 border border-pixel-dark"><input type="date" data-field="orderDate" data-index="${index}" value="${order.orderDate}" class="w-full bg-transparent outline-none edit-input"></td>
         <td class="p-3 border border-pixel-dark"><input type="text" data-field="fullName" data-index="${index}" value="${order.fullName}" class="w-full bg-transparent outline-none edit-input"></td>
         <td class="p-3 border border-pixel-dark"><input type="number" data-field="quantity" data-index="${index}" value="${order.quantity}" min="1" class="w-full bg-transparent outline-none edit-input text-center"></td>
@@ -175,16 +177,21 @@
       list.appendChild(row);
     });
 
+    // Listen to Paid checkbox changes
+    document.querySelectorAll('.paid-checkbox').forEach(cb=>{
+      cb.addEventListener('change', (e)=>{
+        const idx = parseInt(e.target.getAttribute('data-index'));
+        allOrdersData[idx].paid = e.target.checked;
+        saveOrdersToStorage();
+        showMessage(`Invoice ${allOrdersData[idx].txnId} marked as ${e.target.checked?'Paid':'Unpaid'}`, 'success');
+      });
+    });
+
+    // Listen to other editable fields
     document.querySelectorAll('.edit-input').forEach(input=>{
       input.addEventListener('change', handleEditChange);
     });
-    document.getElementById('select-all').addEventListener('change', toggleSelectAll);
-  }
-
-  function toggleSelectAll(event){
-    const isChecked = event.target.checked;
-    document.querySelectorAll('.select-checkbox').forEach(cb => cb.checked = isChecked);
-  }
+}
 
   function submitNewOrder(){
     const date = document.getElementById('new-order-date').value.trim();
@@ -395,17 +402,17 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 <table class="min-w-full border-collapse border border-pixel-dark text-sm">
   <thead>
-  <tr class="bg-pixel-purple text-white">
-    <th class="p-3 border border-pixel-dark w-10">SEL.</th>
-    <th class="p-3 border border-pixel-dark">DATE</th>
-    <th class="p-3 border border-pixel-dark">FULL NAME</th>
-    <th class="p-3 border border-pixel-dark">QTY</th>
-    <th class="p-3 border border-pixel-dark">TYPE</th>
-    <th class="p-3 border border-pixel-dark">PAYMENT</th>
-    <th class="p-3 border border-pixel-dark">INVOICE/TXN #</th>
-    <th class="p-3 border border-pixel-dark">TOTAL (₱)</th>
-    <th class="p-3 border border-pixel-dark w-36">ACTIONS</th>
-  </tr>
+    <tr class="bg-pixel-purple text-white">
+      <th class="p-3 border border-pixel-dark w-10">PAID</th>
+      <th class="p-3 border border-pixel-dark">DATE</th>
+      <th class="p-3 border border-pixel-dark">FULL NAME</th>
+      <th class="p-3 border border-pixel-dark">QTY</th>
+      <th class="p-3 border border-pixel-dark">TYPE</th>
+      <th class="p-3 border border-pixel-dark">PAYMENT</th>
+      <th class="p-3 border border-pixel-dark">INVOICE/TXN #</th>
+      <th class="p-3 border border-pixel-dark">TOTAL (₱)</th>
+      <th class="p-3 border border-pixel-dark w-36">ACTIONS</th>
+    </tr>
   </thead>
   <tbody id="orders-list"></tbody>
 </table>
