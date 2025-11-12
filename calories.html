@@ -78,7 +78,26 @@
         </div>
       </form>
     </section>
-
+<!-- EDIT MEAL MODAL -->
+<div id="edit-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden">
+  <div class="bg-white p-6 rounded-lg w-full max-w-md pixel-shadow">
+    <h2 class="text-lg font-bold mb-3">Edit Meal</h2>
+    <div class="space-y-3">
+      <input id="edit-date" type="date" class="w-full p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+      <input id="edit-name" placeholder="Food name" class="w-full p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+      <div class="grid grid-cols-3 gap-2">
+        <input id="edit-calories" type="number" min="0" placeholder="Calories" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+        <input id="edit-carbs" type="number" min="0" placeholder="Carbs" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+        <input id="edit-protein" type="number" min="0" placeholder="Protein" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+        <input id="edit-fat" type="number" min="0" placeholder="Fat" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+      </div>
+      <div class="flex justify-end gap-2 mt-2">
+        <button id="modal-cancel" class="pixel-btn bg-gray-300 px-4 py-1 rounded">Cancel</button>
+        <button id="modal-save" class="pixel-btn bg-[color:var(--pur)] text-white px-4 py-1 rounded">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
     <!-- ADD / SEARCH MEAL -->
     <section class="col-span-2 pixel-shadow bg-white p-4 rounded-lg">
       <h2 class="text-lg font-bold mb-2">Add Meal / Search Food</h2>
@@ -167,6 +186,50 @@ const protein = document.getElementById('protein');
 const fat = document.getElementById('fat');
 
 let editIndex = null;
+  const editModal = document.getElementById('edit-modal');
+const editDate = document.getElementById('edit-date');
+const editName = document.getElementById('edit-name');
+const editCalories = document.getElementById('edit-calories');
+const editCarbs = document.getElementById('edit-carbs');
+const editProtein = document.getElementById('edit-protein');
+const editFat = document.getElementById('edit-fat');
+const modalSave = document.getElementById('modal-save');
+const modalCancel = document.getElementById('modal-cancel');
+
+  function editMeal(i){
+  const m = meals[i];
+  editIndex = i;
+  editDate.value = m.date;
+  editName.value = m.name;
+  editCalories.value = m.calories;
+  editCarbs.value = m.carbs;
+  editProtein.value = m.protein;
+  editFat.value = m.fat;
+  editModal.classList.remove('hidden');
+}
+
+// Save changes from modal
+modalSave.onclick = ()=>{
+  if(editIndex===null) return;
+  meals[editIndex] = {
+    date: editDate.value,
+    name: editName.value,
+    calories: +editCalories.value||0,
+    carbs: +editCarbs.value||0,
+    protein: +editProtein.value||0,
+    fat: +editFat.value||0
+  };
+  saveMeals();
+  renderMeals();
+  editIndex = null;
+  editModal.classList.add('hidden');
+};
+
+// Cancel modal
+modalCancel.onclick = ()=>{
+  editIndex = null;
+  editModal.classList.add('hidden');
+};
 
 function saveProfile(){localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));}
 function saveMeals(){localStorage.setItem(MEALS_KEY, JSON.stringify(meals));}
