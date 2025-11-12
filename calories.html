@@ -14,11 +14,7 @@
     --pur: #9370DB;
     --dark: #4B0082;
   }
-  body {
-    font-family: "Inter", system-ui;
-    background: var(--lav);
-    color: var(--dark);
-  }
+  body { font-family: "Inter", system-ui; background: var(--lav); color: var(--dark); }
   .pixel-shadow { box-shadow: 4px 4px 0 0 var(--dark); border:2px solid var(--dark); }
   .pixel-btn { box-shadow: 3px 3px 0 0 var(--dark); transition: all .1s; }
   .pixel-btn:active { box-shadow: 1px 1px 0 0 var(--dark); transform: translate(2px,2px); }
@@ -29,7 +25,6 @@
 </head>
 <body class="min-h-screen p-6">
 <div class="max-w-6xl mx-auto">
-
   <!-- HEADER -->
   <header class="text-center mb-6 pixel-shadow bg-[color:var(--pur)] text-white p-4 rounded-lg">
     <h1 class="text-3xl font-bold tracking-widest">Calorie Tracker</h1>
@@ -49,13 +44,11 @@
             <option value="female">Female</option>
           </select>
         </div>
-
         <div class="grid grid-cols-3 gap-2">
           <div><label class="block small mb-1">Age</label><input id="age" type="number" min="4" class="w-full p-2 border-2 border-[color:var(--dark)] rounded-sm" /></div>
           <div><label class="block small mb-1">Height (cm)</label><input id="height" type="number" min="50" class="w-full p-2 border-2 border-[color:var(--dark)] rounded-sm" /></div>
           <div><label class="block small mb-1">Weight (kg)</label><input id="weight" type="number" min="10" step="0.1" class="w-full p-2 border-2 border-[color:var(--dark)] rounded-sm" /></div>
         </div>
-
         <div>
           <label class="block small mb-1">Activity</label>
           <select id="activity" class="w-full p-2 border-2 border-[color:var(--dark)] rounded-sm bg-[color:var(--lav)]">
@@ -66,7 +59,6 @@
             <option value="1.9">Extra active</option>
           </select>
         </div>
-
         <div>
           <label class="block small mb-1">Goal Type</label>
           <select id="goal-type" class="w-full p-2 border-2 border-[color:var(--dark)] rounded-sm bg-[color:var(--lav)]">
@@ -75,12 +67,10 @@
             <option value="gain">Gain Weight (+500 kcal)</option>
           </select>
         </div>
-
         <div class="flex gap-2">
           <button type="button" id="calc-target" class="w-full pixel-btn bg-[color:var(--pur)] text-white p-2 rounded">Save & Calculate</button>
           <button type="button" id="clear-profile" class="w-full pixel-btn bg-gray-300 text-black p-2 rounded">Clear</button>
         </div>
-
         <div class="mt-3 bg-[color:var(--lav)] border-2 border-[color:var(--dark)] p-3 rounded">
           <p class="small">BMR: <strong id="bmr">—</strong></p>
           <p class="small">Target: <strong id="daily-target" class="text-[color:var(--dark)] text-lg">—</strong></p>
@@ -158,163 +148,187 @@
 </div>
 
 <script>
-const PROFILE_KEY='ct_profile';
-const MEALS_KEY='ct_meals';
-let profile=JSON.parse(localStorage.getItem(PROFILE_KEY)||'null');
-let meals=JSON.parse(localStorage.getItem(MEALS_KEY)||'[]');
+// === VARIABLES ===
+const PROFILE_KEY = 'ct_profile';
+const MEALS_KEY = 'ct_meals';
+let profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+let meals = JSON.parse(localStorage.getItem(MEALS_KEY) || '[]');
 
-function saveProfile(){localStorage.setItem(PROFILE_KEY,JSON.stringify(profile));}
-function saveMeals(){localStorage.setItem(MEALS_KEY,JSON.stringify(meals));}
+// === DOM ELEMENTS ===
+const gender = document.getElementById('gender');
+const age = document.getElementById('age');
+const height = document.getElementById('height');
+const weight = document.getElementById('weight');
+const activity = document.getElementById('activity');
+const goalType = document.getElementById('goal-type');
+
+const mealDate = document.getElementById('meal-date');
+const mealName = document.getElementById('meal-name');
+const grams = document.getElementById('grams');
+const calories = document.getElementById('calories');
+const carbs = document.getElementById('carbs');
+const protein = document.getElementById('protein');
+const fat = document.getElementById('fat');
+
+// === FUNCTIONS ===
+function saveProfile(){localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));}
+function saveMeals(){localStorage.setItem(MEALS_KEY, JSON.stringify(meals));}
 function calcBMR(w,h,a,g){return g==='male'?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161;}
 
 function fillProfileFields(){
- if(!profile)return;
- gender.value=profile.gender;
- age.value=profile.age;
- height.value=profile.height;
- weight.value=profile.weight;
- activity.value=profile.activity;
- document.getElementById('goal-type').value=profile.goalType;
+  if(!profile) return;
+  gender.value = profile.gender;
+  age.value = profile.age;
+  height.value = profile.height;
+  weight.value = profile.weight;
+  activity.value = profile.activity;
+  goalType.value = profile.goalType;
 }
 
 function updateProfileDisplay(){
- const bmrEl=document.getElementById('bmr');
- const dailyEl=document.getElementById('daily-target');
- const summary=document.getElementById('profile-summary');
- if(!profile){bmrEl.textContent='—';dailyEl.textContent='—';summary.textContent='';return;}
- const bmr=calcBMR(profile.weight,profile.height,profile.age,profile.gender);
- let daily=bmr*parseFloat(profile.activity);
- if(profile.goalType==='lose')daily-=500;
- if(profile.goalType==='gain')daily+=500;
- bmrEl.textContent=`${Math.round(bmr)} kcal`;
- dailyEl.textContent=`${Math.round(daily)} kcal`;
- summary.innerHTML=`<b>${profile.gender}</b>, ${profile.age} yrs, ${profile.height}cm / ${profile.weight}kg — <b>${Math.round(daily)} kcal/day</b>`;
+  const bmrEl = document.getElementById('bmr');
+  const dailyEl = document.getElementById('daily-target');
+  const summary = document.getElementById('profile-summary');
+  if(!profile){bmrEl.textContent='—';dailyEl.textContent='—';summary.textContent=''; return;}
+  const bmr = calcBMR(profile.weight, profile.height, profile.age, profile.gender);
+  let daily = bmr * parseFloat(profile.activity);
+  if(profile.goalType==='lose') daily -= 500;
+  if(profile.goalType==='gain') daily += 500;
+  bmrEl.textContent = Math.round(bmr) + ' kcal';
+  dailyEl.textContent = Math.round(daily) + ' kcal';
+  summary.innerHTML = `<b>${profile.gender}</b>, ${profile.age} yrs, ${profile.height}cm / ${profile.weight}kg — <b>${Math.round(daily)} kcal/day</b>`;
 }
 
-document.getElementById('calc-target').onclick=()=>{
- profile={
-  gender:gender.value,
-  age:+age.value,
-  height:+height.value,
-  weight:+weight.value,
-  activity:activity.value,
-  goalType:document.getElementById('goal-type').value
- };
- saveProfile();
- updateProfileDisplay();
- alert('Profile saved!');
+// === EVENTS ===
+document.getElementById('calc-target').onclick = ()=>{
+  profile = {
+    gender: gender.value,
+    age: +age.value,
+    height: +height.value,
+    weight: +weight.value,
+    activity: activity.value,
+    goalType: goalType.value
+  };
+  saveProfile();
+  updateProfileDisplay();
+  alert('Profile saved!');
 };
 
-document.getElementById('clear-profile').onclick=()=>{
- if(confirm('Clear profile?')){localStorage.removeItem(PROFILE_KEY);profile=null;updateProfileDisplay();}
+document.getElementById('clear-profile').onclick = ()=>{
+  if(confirm('Clear profile?')){
+    localStorage.removeItem(PROFILE_KEY);
+    profile=null;
+    updateProfileDisplay();
+  }
 };
 
-mealDate.value=new Date().toISOString().slice(0,10);
+mealDate.value = new Date().toISOString().slice(0,10);
 
-document.getElementById('add-meal').onclick=()=>{
- if(!mealName.value)return alert('Enter food name');
- meals.push({
-  date:mealDate.value,
-  name:mealName.value,
-  calories:+calories.value||0,
-  carbs:+carbs.value||0,
-  protein:+protein.value||0,
-  fat:+fat.value||0
- });
- saveMeals();
- renderMeals();
+document.getElementById('add-meal').onclick = ()=>{
+  if(!mealName.value) return alert('Enter food name');
+  meals.push({
+    date: mealDate.value,
+    name: mealName.value,
+    calories: +calories.value || 0,
+    carbs: +carbs.value || 0,
+    protein: +protein.value || 0,
+    fat: +fat.value || 0
+  });
+  saveMeals();
+  renderMeals();
 };
 
-document.getElementById('reset-form').onclick=()=>[mealName,grams,calories,carbs,protein,fat].forEach(i=>i.value='');
+document.getElementById('reset-form').onclick = ()=>[mealName, grams, calories, carbs, protein, fat].forEach(i=>i.value='');
 
-document.getElementById('search-food').onclick=async()=>{
- if(!mealName.value)return alert('Enter food name');
- const btn=document.getElementById('search-food');
- btn.textContent='Searching...';
- try{
- const res=await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${mealName.value}&json=1&page_size=1`);
- const data=await res.json();
- const p=data.products?.[0]?.nutriments;
- if(p){
-  calories.value=p['energy-kcal_100g']||0;
-  carbs.value=p['carbohydrates_100g']||0;
-  protein.value=p['proteins_100g']||0;
-  fat.value=p['fat_100g']||0;
-  alert('Auto-filled!');
- }else alert('No data found');
- }catch(e){alert('Error fetching');}
- btn.textContent='Search Food';
+document.getElementById('search-food').onclick = async ()=>{
+  if(!mealName.value) return alert('Enter food name');
+  const btn = document.getElementById('search-food');
+  btn.textContent = 'Searching...';
+  try{
+    const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${mealName.value}&json=1&page_size=1`);
+    const data = await res.json();
+    const p = data.products?.[0]?.nutriments;
+    if(p){
+      calories.value = p['energy-kcal_100g'] || 0;
+      carbs.value = p['carbohydrates_100g'] || 0;
+      protein.value = p['proteins_100g'] || 0;
+      fat.value = p['fat_100g'] || 0;
+      alert('Auto-filled!');
+    } else alert('No data found');
+  } catch(e){alert('Error fetching');}
+  btn.textContent = 'Search Food';
 };
 
+// === MEALS RENDER ===
 function renderMeals(){
- const tbody=document.getElementById('meals-tbody');
- tbody.innerHTML=meals.map(m=>`
- <tr><td class='border p-1'>${m.date}</td>
- <td class='border p-1'>${m.name}</td>
- <td class='border p-1'>${m.calories}</td>
- <td class='border p-1'>${m.carbs}</td>
- <td class='border p-1'>${m.protein}</td>
- <td class='border p-1'>${m.fat}</td></tr>`).join('')||
- `<tr><td colspan='6' class='text-center p-2 text-gray-500'>No meals yet</td></tr>`;
- updateTotals();
+  const tbody = document.getElementById('meals-tbody');
+  tbody.innerHTML = meals.map(m=>`
+    <tr><td class='border p-1'>${m.date}</td>
+    <td class='border p-1'>${m.name}</td>
+    <td class='border p-1'>${m.calories}</td>
+    <td class='border p-1'>${m.carbs}</td>
+    <td class='border p-1'>${m.protein}</td>
+    <td class='border p-1'>${m.fat}</td></tr>`).join('') ||
+    `<tr><td colspan='6' class='text-center p-2 text-gray-500'>No meals yet</td></tr>`;
+  updateTotals();
 }
 
 function updateTotals(){
- const today=new Date().toISOString().slice(0,10);
- const todayMeals=meals.filter(m=>m.date===today);
- const total=todayMeals.reduce((s,m)=>s+(+m.calories||0),0);
- document.getElementById('today-cals').textContent=total.toFixed(1);
- updateMonthlyAverages();
+  const today = new Date().toISOString().slice(0,10);
+  const todayMeals = meals.filter(m=>m.date===today);
+  const total = todayMeals.reduce((s,m)=>s+(+m.calories||0),0);
+  document.getElementById('today-cals').textContent = total.toFixed(1);
+  updateMonthlyAverages();
 }
 
 function updateMonthlyAverages(){
- const now=new Date();
- const monthMeals=meals.filter(m=>{
-  const d=new Date(m.date);
-  return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
- });
- if(monthMeals.length===0){
-  ['avg-cal','avg-protein','avg-carbs','avg-fat'].forEach(id=>document.getElementById(id).textContent=0);
-  return;
- }
- const grouped={};
- monthMeals.forEach(m=>{
-  if(!grouped[m.date])grouped[m.date]={cal:0,p:0,c:0,f:0};
-  grouped[m.date].cal+=+m.calories||0;
-  grouped[m.date].p+=+m.protein||0;
-  grouped[m.date].c+=+m.carbs||0;
-  grouped[m.date].f+=+m.fat||0;
- });
- const days=Object.keys(grouped).length;
- const avgCal=Object.values(grouped).reduce((a,b)=>a+b.cal,0)/days;
- const avgP=Object.values(grouped).reduce((a,b)=>a+b.p,0)/days;
- const avgC=Object.values(grouped).reduce((a,b)=>a+b.c,0)/days;
- const avgF=Object.values(grouped).reduce((a,b)=>a+b.f,0)/days;
- document.getElementById('avg-cal').textContent=avgCal.toFixed(1);
- document.getElementById('avg-protein').textContent=avgP.toFixed(1);
- document.getElementById('avg-carbs').textContent=avgC.toFixed(1);
- document.getElementById('avg-fat').textContent=avgF.toFixed(1);
+  const now = new Date();
+  const monthMeals = meals.filter(m=>{
+    const d=new Date(m.date);
+    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+  });
+  if(monthMeals.length===0){
+    ['avg-cal','avg-protein','avg-carbs','avg-fat'].forEach(id=>document.getElementById(id).textContent=0);
+    return;
+  }
+  const grouped={};
+  monthMeals.forEach(m=>{
+    if(!grouped[m.date]) grouped[m.date]={cal:0,p:0,c:0,f:0};
+    grouped[m.date].cal+= +m.calories||0;
+    grouped[m.date].p+= +m.protein||0;
+    grouped[m.date].c+= +m.carbs||0;
+    grouped[m.date].f+= +m.fat||0;
+  });
+  const days = Object.keys(grouped).length;
+  const avgCal = Object.values(grouped).reduce((a,b)=>a+b.cal,0)/days;
+  const avgP = Object.values(grouped).reduce((a,b)=>a+b.p,0)/days;
+  const avgC = Object.values(grouped).reduce((a,b)=>a+b.c,0)/days;
+  const avgF = Object.values(grouped).reduce((a,b)=>a+b.f,0)/days;
+  document.getElementById('avg-cal').textContent = avgCal.toFixed(1);
+  document.getElementById('avg-protein').textContent = avgP.toFixed(1);
+  document.getElementById('avg-carbs').textContent = avgC.toFixed(1);
+  document.getElementById('avg-fat').textContent = avgF.toFixed(1);
 }
 
-// clear all
-document.getElementById('clear-all').onclick=()=>{
- if(confirm('Delete all meals?')){meals=[];saveMeals();renderMeals();}
+// === CLEAR / DOWNLOAD ===
+document.getElementById('clear-all').onclick = ()=>{
+  if(confirm('Delete all meals?')){meals=[];saveMeals();renderMeals();}
 };
 
-// download
-document.getElementById('download-data').onclick=()=>{
- const data={profile,meals,date:new Date().toLocaleString()};
- const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
- const link=document.createElement('a');
- link.href=URL.createObjectURL(blob);
- link.download=`calorie_tracker_${new Date().toISOString().slice(0,10)}.json`;
- link.click();
+document.getElementById('download-data').onclick = ()=>{
+  const data={profile, meals, date:new Date().toLocaleString()};
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `calorie_tracker_${new Date().toISOString().slice(0,10)}.json`;
+  link.click();
 };
 
-// INIT
+// === INIT ===
 fillProfileFields();
 updateProfileDisplay();
 renderMeals();
+
 </script>
 </body>
 </html>
