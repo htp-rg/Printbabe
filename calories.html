@@ -78,26 +78,28 @@
         </div>
       </form>
     </section>
-<!-- EDIT MEAL MODAL -->
-<div id="edit-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden">
-  <div class="bg-white p-6 rounded-lg w-full max-w-md pixel-shadow">
-    <h2 class="text-lg font-bold mb-3">Edit Meal</h2>
-    <div class="space-y-3">
-      <input id="edit-date" type="date" class="w-full p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-      <input id="edit-name" placeholder="Food name" class="w-full p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-      <div class="grid grid-cols-3 gap-2">
-        <input id="edit-calories" type="number" min="0" placeholder="Calories" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-        <input id="edit-carbs" type="number" min="0" placeholder="Carbs" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-        <input id="edit-protein" type="number" min="0" placeholder="Protein" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-        <input id="edit-fat" type="number" min="0" placeholder="Fat" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-      </div>
-      <div class="flex justify-end gap-2 mt-2">
-        <button id="modal-cancel" class="pixel-btn bg-gray-300 px-4 py-1 rounded">Cancel</button>
-        <button id="modal-save" class="pixel-btn bg-[color:var(--pur)] text-white px-4 py-1 rounded">Save</button>
+
+    <!-- EDIT MEAL MODAL -->
+    <div id="edit-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden">
+      <div class="bg-white p-6 rounded-lg w-full max-w-md pixel-shadow">
+        <h2 class="text-lg font-bold mb-3">Edit Meal</h2>
+        <div class="space-y-3">
+          <input id="edit-date" type="date" class="w-full p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+          <input id="edit-name" placeholder="Food name" class="w-full p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+          <div class="grid grid-cols-4 gap-2">
+            <input id="edit-calories" type="number" min="0" placeholder="Calories" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+            <input id="edit-carbs" type="number" min="0" placeholder="Carbs" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+            <input id="edit-protein" type="number" min="0" placeholder="Protein" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+            <input id="edit-fat" type="number" min="0" placeholder="Fat" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+          </div>
+          <div class="flex justify-end gap-2 mt-2">
+            <button id="modal-cancel" class="pixel-btn bg-gray-300 px-4 py-1 rounded">Cancel</button>
+            <button id="modal-save" class="pixel-btn bg-[color:var(--pur)] text-white px-4 py-1 rounded">Save</button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
+
     <!-- ADD / SEARCH MEAL -->
     <section class="col-span-2 pixel-shadow bg-white p-4 rounded-lg">
       <h2 class="text-lg font-bold mb-2">Add Meal / Search Food</h2>
@@ -150,16 +152,6 @@
       <div class="mt-4 bg-[color:var(--lav)] p-3 rounded border">
         <p><strong>Today’s total:</strong> <span id="today-cals">0</span> kcal</p>
       </div>
-
-      <canvas id="cal-chart" class="mt-4"></canvas>
-
-      <div class="mt-6 bg-[color:var(--lav)] border p-3 rounded">
-        <h3 class="font-bold mb-2 text-[color:var(--dark)]">📊 Monthly Averages</h3>
-        <p>Calories/day: <span id="avg-cal">0</span> kcal</p>
-        <p>Protein/day: <span id="avg-protein">0</span> g</p>
-        <p>Carbs/day: <span id="avg-carbs">0</span> g</p>
-        <p>Fat/day: <span id="avg-fat">0</span> g</p>
-      </div>
     </section>
   </main>
 </div>
@@ -186,7 +178,9 @@ const protein = document.getElementById('protein');
 const fat = document.getElementById('fat');
 
 let editIndex = null;
-  const editModal = document.getElementById('edit-modal');
+
+// Modal Elements
+const editModal = document.getElementById('edit-modal');
 const editDate = document.getElementById('edit-date');
 const editName = document.getElementById('edit-name');
 const editCalories = document.getElementById('edit-calories');
@@ -195,41 +189,6 @@ const editProtein = document.getElementById('edit-protein');
 const editFat = document.getElementById('edit-fat');
 const modalSave = document.getElementById('modal-save');
 const modalCancel = document.getElementById('modal-cancel');
-
-  function editMeal(i){
-  const m = meals[i];
-  editIndex = i;
-  editDate.value = m.date;
-  editName.value = m.name;
-  editCalories.value = m.calories;
-  editCarbs.value = m.carbs;
-  editProtein.value = m.protein;
-  editFat.value = m.fat;
-  editModal.classList.remove('hidden');
-}
-
-// Save changes from modal
-modalSave.onclick = ()=>{
-  if(editIndex===null) return;
-  meals[editIndex] = {
-    date: editDate.value,
-    name: editName.value,
-    calories: +editCalories.value||0,
-    carbs: +editCarbs.value||0,
-    protein: +editProtein.value||0,
-    fat: +editFat.value||0
-  };
-  saveMeals();
-  renderMeals();
-  editIndex = null;
-  editModal.classList.add('hidden');
-};
-
-// Cancel modal
-modalCancel.onclick = ()=>{
-  editIndex = null;
-  editModal.classList.add('hidden');
-};
 
 function saveProfile(){localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));}
 function saveMeals(){localStorage.setItem(MEALS_KEY, JSON.stringify(meals));}
@@ -259,27 +218,14 @@ function updateProfileDisplay(){
   summary.innerHTML = `<b>${profile.gender}</b>, ${profile.age} yrs, ${profile.height}cm / ${profile.weight}kg — <b>${Math.round(daily)} kcal/day</b>`;
 }
 
-document.getElementById('calc-target').onclick = ()=>{
-  profile = { gender: gender.value, age:+age.value, height:+height.value, weight:+weight.value, activity:activity.value, goalType:goalType.value };
-  saveProfile(); updateProfileDisplay(); alert('Profile saved!');
-};
-
-document.getElementById('clear-profile').onclick = ()=>{
-  if(confirm('Clear profile?')){localStorage.removeItem(PROFILE_KEY); profile=null; updateProfileDisplay();}
-};
+document.getElementById('calc-target').onclick = ()=>{profile={gender:gender.value,age:+age.value,height:+height.value,weight:+weight.value,activity:activity.value,goalType:goalType.value};saveProfile();updateProfileDisplay();alert('Profile saved!');};
+document.getElementById('clear-profile').onclick = ()=>{if(confirm('Clear profile?')){localStorage.removeItem(PROFILE_KEY); profile=null; updateProfileDisplay();}};
 
 mealDate.value = new Date().toISOString().slice(0,10);
 
 document.getElementById('add-meal').onclick = ()=>{
   if(!mealName.value) return alert('Enter food name');
-  const mealObj = {
-    date: mealDate.value,
-    name: mealName.value,
-    calories: +calories.value||0,
-    carbs: +carbs.value||0,
-    protein: +protein.value||0,
-    fat: +fat.value||0
-  };
+  const mealObj = {date:mealDate.value,name:mealName.value,calories:+calories.value||0,carbs:+carbs.value||0,protein:+protein.value||0,fat:+fat.value||0};
   if(editIndex !== null){
     meals[editIndex] = mealObj;
     editIndex = null;
@@ -309,18 +255,13 @@ document.getElementById('search-food').onclick = async ()=>{
   btn.textContent='Search Food';
 };
 
+// Render Meal Table
 function renderMeals(){
   const tbody = document.getElementById('meals-tbody');
   tbody.innerHTML = '';
   if(meals.length===0){tbody.innerHTML=`<tr><td colspan='7' class='text-center p-2 text-gray-500'>No meals yet</td></tr>`; return;}
-
-  // Group meals by date
-  const grouped = {};
-  meals.forEach((m,i)=>{
-    if(!grouped[m.date]) grouped[m.date]=[];
-    grouped[m.date].push({...m, index:i});
-  });
-
+  const grouped={};
+  meals.forEach((m,i)=>{if(!grouped[m.date]) grouped[m.date]=[]; grouped[m.date].push({...m,index:i});});
   Object.keys(grouped).sort().forEach(date=>{
     tbody.innerHTML += `<tr class="day-separator"><td colspan="7">${date}</td></tr>`;
     grouped[date].forEach(m=>{
@@ -332,7 +273,7 @@ function renderMeals(){
         <td class='border p-1'>${m.protein}</td>
         <td class='border p-1'>${m.fat}</td>
         <td class='border p-1'>
-          <button class='pixel-btn bg-yellow-400 text-black px-2 py-0.5 rounded' onclick='editMeal(${m.index})'>Edit</button>
+          <button class='pixel-btn bg-yellow-400 text-black px-2 py-0.5 rounded' onclick='openEditModal(${m.index})'>Edit</button>
           <button class='pixel-btn bg-red-500 text-white px-2 py-0.5 rounded' onclick='deleteMeal(${m.index})'>Delete</button>
         </td>
       </tr>`;
@@ -341,68 +282,42 @@ function renderMeals(){
   updateTotals();
 }
 
-function editMeal(i){
+// Open Modal
+function openEditModal(i){
   const m = meals[i];
-  mealDate.value = m.date;
-  mealName.value = m.name;
-  calories.value = m.calories;
-  carbs.value = m.carbs;
-  protein.value = m.protein;
-  fat.value = m.fat;
   editIndex = i;
+  editDate.value = m.date;
+  editName.value = m.name;
+  editCalories.value = m.calories;
+  editCarbs.value = m.carbs;
+  editProtein.value = m.protein;
+  editFat.value = m.fat;
+  editModal.classList.remove('hidden');
 }
 
-function deleteMeal(i){
-  if(confirm('Delete this meal?')){ meals.splice(i,1); saveMeals(); renderMeals(); }
-}
+// Save modal
+modalSave.onclick = ()=>{
+  if(editIndex===null) return;
+  meals[editIndex] = {
+    date:editDate.value,
+    name:editName.value,
+    calories:+editCalories.value||0,
+    carbs:+editCarbs.value||0,
+    protein:+editProtein.value||0,
+    fat:+editFat.value||0
+  };
+  saveMeals(); renderMeals();
+  editIndex=null; editModal.classList.add('hidden');
+};
 
-function updateTotals(){
-  const today = new Date().toISOString().slice(0,10);
-  const todayMeals = meals.filter(m=>m.date===today);
-  const total = todayMeals.reduce((s,m)=>s+(+m.calories||0),0);
-  document.getElementById('today-cals').textContent = total.toFixed(1);
-  updateMonthlyAverages();
-}
+// Cancel modal
+modalCancel.onclick = ()=>{editIndex=null; editModal.classList.add('hidden');};
 
-function updateMonthlyAverages(){
-  const now = new Date();
-  const monthMeals = meals.filter(m=>{
-    const d=new Date(m.date);
-    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
-  });
-  if(monthMeals.length===0){
-    ['avg-cal','avg-protein','avg-carbs','avg-fat'].forEach(id=>document.getElementById(id).textContent=0);
-    return;
-  }
-  const grouped={};
-  monthMeals.forEach(m=>{
-    if(!grouped[m.date]) grouped[m.date]={cal:0,p:0,c:0,f:0};
-    grouped[m.date].cal+= +m.calories||0;
-    grouped[m.date].p+= +m.protein||0;
-    grouped[m.date].c+= +m.carbs||0;
-    grouped[m.date].f+= +m.fat||0;
-  });
-  const days = Object.keys(grouped).length;
-  const avgCal = Object.values(grouped).reduce((a,b)=>a+b.cal,0)/days;
-  const avgP = Object.values(grouped).reduce((a,b)=>a+b.p,0)/days;
-  const avgC = Object.values(grouped).reduce((a,b)=>a+b.c,0)/days;
-  const avgF = Object.values(grouped).reduce((a,b)=>a+b.f,0)/days;
-  document.getElementById('avg-cal').textContent = avgCal.toFixed(1);
-  document.getElementById('avg-protein').textContent = avgP.toFixed(1);
-  document.getElementById('avg-carbs').textContent = avgC.toFixed(1);
-  document.getElementById('avg-fat').textContent = avgF.toFixed(1);
-}
+function deleteMeal(i){if(confirm('Delete this meal?')){meals.splice(i,1);saveMeals();renderMeals();}}
+
+function updateTotals(){const today=new Date().toISOString().slice(0,10);const total=meals.filter(m=>m.date===today).reduce((s,m)=>s+(+m.calories||0),0);document.getElementById('today-cals').textContent=total.toFixed(1);}
 
 document.getElementById('clear-all').onclick = ()=>{ if(confirm('Delete all meals?')){meals=[];saveMeals();renderMeals();} };
-
-document.getElementById('download-data').onclick = ()=>{
-  const data={profile, meals, date:new Date().toLocaleString()};
-  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `calorie_tracker_${new Date().toISOString().slice(0,10)}.json`;
-  link.click();
-};
 
 fillProfileFields(); updateProfileDisplay(); renderMeals();
 </script>
