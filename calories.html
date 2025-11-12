@@ -121,7 +121,10 @@
     <section class="col-span-3 pixel-shadow bg-white p-4 rounded-lg">
       <div class="flex justify-between items-center mb-3">
         <h2 class="text-lg font-bold">Meal Log</h2>
-        <button id="clear-all" class="pixel-btn bg-red-500 text-white px-3 py-1 rounded">Clear All</button>
+        <div class="flex gap-2">
+          <button id="download-data" class="pixel-btn bg-[color:var(--pur)] text-white px-3 py-1 rounded">Download Data</button>
+          <button id="clear-all" class="pixel-btn bg-red-500 text-white px-3 py-1 rounded">Clear All</button>
+        </div>
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full border-collapse text-sm">
@@ -194,7 +197,6 @@ document.getElementById('calc-target').onclick = ()=>{
   };
   saveProfile(profile);
   updateProfileDisplay();
-  alert('Profile saved!');
 };
 
 // Clear profile
@@ -222,10 +224,14 @@ document.getElementById('add-meal').onclick = ()=>{
   renderMeals();
 };
 
+// Auto-save meals on every change
+window.addEventListener('beforeunload', ()=> saveMeals(meals));
+
 // Search API
 document.getElementById('search-food').onclick = async()=>{
   if(!mealName.value) return alert('Enter food name to search');
-  searchFoodBtn.textContent='Searching...';
+  const btn = document.getElementById('search-food');
+  btn.textContent='Searching...';
   const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${mealName.value}&json=1&page_size=1`);
   const data = await res.json();
   const p = data.products?.[0]?.nutriments;
@@ -236,7 +242,7 @@ document.getElementById('search-food').onclick = async()=>{
     fat.value = p['fat_100g'] || 0;
     alert('Auto-filled from OpenFoodFacts');
   } else alert('No data found');
-  searchFoodBtn.textContent='Search Food';
+  btn.textContent='Search Food';
 };
 
 // Reset form
@@ -302,6 +308,21 @@ function updateMonthlyAverages(){
 // Clear all
 document.getElementById('clear-all').onclick=()=>{
   if(confirm('Delete all meals?')){ meals=[]; saveMeals(meals); renderMeals(); }
+};
+
+// Download data
+document.getElementById('download-data').onclick=()=>{
+  const exportData = { 
+    profile, 
+    meals, 
+    exportedAt: new Date().toLocaleString() 
+  };
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+  const link = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  link.href = URL.createObjectURL(blob);
+  link.download = `calorie_tracker_${date}.json`;
+  link.click();
 };
 
 updateProfileDisplay();
