@@ -21,6 +21,7 @@
   .small { font-size:0.85rem }
   tbody tr:nth-child(odd) { background: #fff; }
   tbody tr:nth-child(even) { background: #f9f8ff; }
+  .day-separator { background: #d8cfff; font-weight: bold; text-align:center; }
 </style>
 </head>
 <body class="min-h-screen p-6">
@@ -79,27 +80,27 @@
     </section>
 
     <!-- ADD / SEARCH MEAL -->
-   <section class="col-span-2 pixel-shadow bg-white p-4 rounded-lg">
-  <h2 class="text-lg font-bold mb-2">Add Meal / Search Food</h2>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
-    <input id="meal-date" type="date" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-    <input id="meal-name" placeholder="Food name (e.g., banana)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-  </div>
+    <section class="col-span-2 pixel-shadow bg-white p-4 rounded-lg">
+      <h2 class="text-lg font-bold mb-2">Add Meal / Search Food</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+        <input id="meal-date" type="date" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+        <input id="meal-name" placeholder="Food name (e.g., banana)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+      </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2">
-    <input id="grams" type="number" min="1" placeholder="Grams" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-    <input id="calories" type="number" min="0" placeholder="Calories" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-    <input id="carbs" type="number" min="0" placeholder="Carbs (g)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-    <input id="protein" type="number" min="0" placeholder="Protein (g)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-    <input id="fat" type="number" min="0" placeholder="Fat (g)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-  </div>
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2">
+        <input id="grams" type="number" min="1" placeholder="Grams" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+        <input id="calories" type="number" min="0" placeholder="Calories" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+        <input id="carbs" type="number" min="0" placeholder="Carbs (g)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+        <input id="protein" type="number" min="0" placeholder="Protein (g)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+        <input id="fat" type="number" min="0" placeholder="Fat (g)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+      </div>
 
-  <div class="flex gap-2 mb-2">
-    <button id="search-food" class="pixel-btn bg-[color:var(--pur)] text-white p-2 rounded">Search Food</button>
-    <button id="add-meal" class="pixel-btn bg-[color:var(--dark)] text-white p-2 rounded">Add Meal</button>
-    <button id="reset-form" class="pixel-btn bg-gray-300 text-black p-2 rounded">Reset</button>
-  </div>
-</section>
+      <div class="flex gap-2 mb-2">
+        <button id="search-food" class="pixel-btn bg-[color:var(--pur)] text-white p-2 rounded">Search Food</button>
+        <button id="add-meal" class="pixel-btn bg-[color:var(--dark)] text-white p-2 rounded">Add Meal</button>
+        <button id="reset-form" class="pixel-btn bg-gray-300 text-black p-2 rounded">Reset</button>
+      </div>
+    </section>
 
     <!-- MEAL LIST -->
     <section class="col-span-3 pixel-shadow bg-white p-4 rounded-lg">
@@ -120,6 +121,7 @@
               <th class="p-2 border">Carbs</th>
               <th class="p-2 border">Protein</th>
               <th class="p-2 border">Fat</th>
+              <th class="p-2 border">Actions</th>
             </tr>
           </thead>
           <tbody id="meals-tbody"></tbody>
@@ -144,13 +146,11 @@
 </div>
 
 <script>
-// === VARIABLES ===
 const PROFILE_KEY = 'ct_profile';
 const MEALS_KEY = 'ct_meals';
 let profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
 let meals = JSON.parse(localStorage.getItem(MEALS_KEY) || '[]');
 
-// === DOM ELEMENTS ===
 const gender = document.getElementById('gender');
 const age = document.getElementById('age');
 const height = document.getElementById('height');
@@ -166,7 +166,8 @@ const carbs = document.getElementById('carbs');
 const protein = document.getElementById('protein');
 const fat = document.getElementById('fat');
 
-// === FUNCTIONS ===
+let editIndex = null;
+
 function saveProfile(){localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));}
 function saveMeals(){localStorage.setItem(MEALS_KEY, JSON.stringify(meals));}
 function calcBMR(w,h,a,g){return g==='male'?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161;}
@@ -195,51 +196,41 @@ function updateProfileDisplay(){
   summary.innerHTML = `<b>${profile.gender}</b>, ${profile.age} yrs, ${profile.height}cm / ${profile.weight}kg — <b>${Math.round(daily)} kcal/day</b>`;
 }
 
-// === EVENTS ===
 document.getElementById('calc-target').onclick = ()=>{
-  profile = {
-    gender: gender.value,
-    age: +age.value,
-    height: +height.value,
-    weight: +weight.value,
-    activity: activity.value,
-    goalType: goalType.value
-  };
-  saveProfile();
-  updateProfileDisplay();
-  alert('Profile saved!');
+  profile = { gender: gender.value, age:+age.value, height:+height.value, weight:+weight.value, activity:activity.value, goalType:goalType.value };
+  saveProfile(); updateProfileDisplay(); alert('Profile saved!');
 };
 
 document.getElementById('clear-profile').onclick = ()=>{
-  if(confirm('Clear profile?')){
-    localStorage.removeItem(PROFILE_KEY);
-    profile=null;
-    updateProfileDisplay();
-  }
+  if(confirm('Clear profile?')){localStorage.removeItem(PROFILE_KEY); profile=null; updateProfileDisplay();}
 };
 
 mealDate.value = new Date().toISOString().slice(0,10);
 
 document.getElementById('add-meal').onclick = ()=>{
   if(!mealName.value) return alert('Enter food name');
-  meals.push({
+  const mealObj = {
     date: mealDate.value,
     name: mealName.value,
-    calories: +calories.value || 0,
-    carbs: +carbs.value || 0,
-    protein: +protein.value || 0,
-    fat: +fat.value || 0
-  });
+    calories: +calories.value||0,
+    carbs: +carbs.value||0,
+    protein: +protein.value||0,
+    fat: +fat.value||0
+  };
+  if(editIndex !== null){
+    meals[editIndex] = mealObj;
+    editIndex = null;
+  } else meals.push(mealObj);
   saveMeals();
   renderMeals();
+  document.getElementById('reset-form').click();
 };
 
 document.getElementById('reset-form').onclick = ()=>[mealName, grams, calories, carbs, protein, fat].forEach(i=>i.value='');
 
 document.getElementById('search-food').onclick = async ()=>{
   if(!mealName.value) return alert('Enter food name');
-  const btn = document.getElementById('search-food');
-  btn.textContent = 'Searching...';
+  const btn = document.getElementById('search-food'); btn.textContent='Searching...';
   try{
     const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${mealName.value}&json=1&page_size=1`);
     const data = await res.json();
@@ -252,21 +243,54 @@ document.getElementById('search-food').onclick = async ()=>{
       alert('Auto-filled!');
     } else alert('No data found');
   } catch(e){alert('Error fetching');}
-  btn.textContent = 'Search Food';
+  btn.textContent='Search Food';
 };
 
-// === MEALS RENDER ===
 function renderMeals(){
   const tbody = document.getElementById('meals-tbody');
-  tbody.innerHTML = meals.map(m=>`
-    <tr><td class='border p-1'>${m.date}</td>
-    <td class='border p-1'>${m.name}</td>
-    <td class='border p-1'>${m.calories}</td>
-    <td class='border p-1'>${m.carbs}</td>
-    <td class='border p-1'>${m.protein}</td>
-    <td class='border p-1'>${m.fat}</td></tr>`).join('') ||
-    `<tr><td colspan='6' class='text-center p-2 text-gray-500'>No meals yet</td></tr>`;
+  tbody.innerHTML = '';
+  if(meals.length===0){tbody.innerHTML=`<tr><td colspan='7' class='text-center p-2 text-gray-500'>No meals yet</td></tr>`; return;}
+
+  // Group meals by date
+  const grouped = {};
+  meals.forEach((m,i)=>{
+    if(!grouped[m.date]) grouped[m.date]=[];
+    grouped[m.date].push({...m, index:i});
+  });
+
+  Object.keys(grouped).sort().forEach(date=>{
+    tbody.innerHTML += `<tr class="day-separator"><td colspan="7">${date}</td></tr>`;
+    grouped[date].forEach(m=>{
+      tbody.innerHTML += `<tr>
+        <td class='border p-1'>${m.date}</td>
+        <td class='border p-1'>${m.name}</td>
+        <td class='border p-1'>${m.calories}</td>
+        <td class='border p-1'>${m.carbs}</td>
+        <td class='border p-1'>${m.protein}</td>
+        <td class='border p-1'>${m.fat}</td>
+        <td class='border p-1'>
+          <button class='pixel-btn bg-yellow-400 text-black px-2 py-0.5 rounded' onclick='editMeal(${m.index})'>Edit</button>
+          <button class='pixel-btn bg-red-500 text-white px-2 py-0.5 rounded' onclick='deleteMeal(${m.index})'>Delete</button>
+        </td>
+      </tr>`;
+    });
+  });
   updateTotals();
+}
+
+function editMeal(i){
+  const m = meals[i];
+  mealDate.value = m.date;
+  mealName.value = m.name;
+  calories.value = m.calories;
+  carbs.value = m.carbs;
+  protein.value = m.protein;
+  fat.value = m.fat;
+  editIndex = i;
+}
+
+function deleteMeal(i){
+  if(confirm('Delete this meal?')){ meals.splice(i,1); saveMeals(); renderMeals(); }
 }
 
 function updateTotals(){
@@ -306,10 +330,7 @@ function updateMonthlyAverages(){
   document.getElementById('avg-fat').textContent = avgF.toFixed(1);
 }
 
-// === CLEAR / DOWNLOAD ===
-document.getElementById('clear-all').onclick = ()=>{
-  if(confirm('Delete all meals?')){meals=[];saveMeals();renderMeals();}
-};
+document.getElementById('clear-all').onclick = ()=>{ if(confirm('Delete all meals?')){meals=[];saveMeals();renderMeals();} };
 
 document.getElementById('download-data').onclick = ()=>{
   const data={profile, meals, date:new Date().toLocaleString()};
@@ -320,11 +341,7 @@ document.getElementById('download-data').onclick = ()=>{
   link.click();
 };
 
-// === INIT ===
-fillProfileFields();
-updateProfileDisplay();
-renderMeals();
-
+fillProfileFields(); updateProfileDisplay(); renderMeals();
 </script>
 </body>
 </html>
