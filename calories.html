@@ -40,7 +40,7 @@
   <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- PROFILE -->
     <section class="pixel-shadow bg-white p-4 rounded-lg">
-      <h2 class="text-lg font-bold mb-2">Profile & Daily Target</h2>
+      <h2 class="text-lg font-bold mb-2">Profile & Target</h2>
       <form id="profile-form" class="space-y-3">
         <div>
           <label class="block small mb-1">Gender</label>
@@ -64,6 +64,15 @@
             <option value="1.55">Moderately active</option>
             <option value="1.725">Very active</option>
             <option value="1.9">Extra active</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block small mb-1">Goal Type</label>
+          <select id="goal-type" class="w-full p-2 border-2 border-[color:var(--dark)] rounded-sm bg-[color:var(--lav)]">
+            <option value="maintain">Maintain Weight</option>
+            <option value="lose">Lose Weight (-500 kcal)</option>
+            <option value="gain">Gain Weight (+500 kcal)</option>
           </select>
         </div>
 
@@ -129,10 +138,20 @@
           <tbody id="meals-tbody"></tbody>
         </table>
       </div>
+
       <div class="mt-4 bg-[color:var(--lav)] p-3 rounded border">
         <p><strong>Today’s total:</strong> <span id="today-cals">0</span> kcal</p>
       </div>
+
       <canvas id="cal-chart" class="mt-4"></canvas>
+
+      <div class="mt-6 bg-[color:var(--lav)] border p-3 rounded">
+        <h3 class="font-bold mb-2 text-[color:var(--dark)]">📊 Monthly Averages</h3>
+        <p>Calories/day: <span id="avg-cal">0</span> kcal</p>
+        <p>Protein/day: <span id="avg-protein">0</span> g</p>
+        <p>Carbs/day: <span id="avg-carbs">0</span> g</p>
+        <p>Fat/day: <span id="avg-fat">0</span> g</p>
+      </div>
     </section>
   </main>
 </div>
@@ -141,71 +160,70 @@
 const PROFILE_KEY = 'ct_profile';
 const MEALS_KEY = 'ct_meals';
 
-const gender = document.getElementById('gender');
-const age = document.getElementById('age');
-const height = document.getElementById('height');
-const weight = document.getElementById('weight');
-const activity = document.getElementById('activity');
-const bmrEl = document.getElementById('bmr');
-const dailyTargetEl = document.getElementById('daily-target');
-const profileSummary = document.getElementById('profile-summary');
-
-const mealDate = document.getElementById('meal-date');
-const mealName = document.getElementById('meal-name');
-const grams = document.getElementById('grams');
-const calories = document.getElementById('calories');
-const carbs = document.getElementById('carbs');
-const protein = document.getElementById('protein');
-const fat = document.getElementById('fat');
-const mealsTbody = document.getElementById('meals-tbody');
-const todayCals = document.getElementById('today-cals');
-
-const calcBtn = document.getElementById('calc-target');
-const clearProfile = document.getElementById('clear-profile');
-const addMealBtn = document.getElementById('add-meal');
-const searchFoodBtn = document.getElementById('search-food');
-const resetFormBtn = document.getElementById('reset-form');
-const clearAllBtn = document.getElementById('clear-all');
-
 let profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
 let meals = JSON.parse(localStorage.getItem(MEALS_KEY) || '[]');
 
 function saveProfile(p){ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
 function saveMeals(m){ localStorage.setItem(MEALS_KEY, JSON.stringify(m)); }
 
-function calcBMR(w,h,a,g){ return g==='male' ? 10*w+6.25*h-5*a+5 : 10*w+6.25*h-5*a-161; }
+function calcBMR(w,h,a,g){ return g==='male'?10*w+6.25*h-5*a+5:10*w+6.25*h-5*a-161; }
 
 function updateProfileDisplay(){
+  const bmrEl = document.getElementById('bmr');
+  const dailyTargetEl = document.getElementById('daily-target');
+  const profileSummary = document.getElementById('profile-summary');
   if(!profile){ bmrEl.textContent='—'; dailyTargetEl.textContent='—'; profileSummary.textContent=''; return; }
   const bmr = calcBMR(profile.weight,profile.height,profile.age,profile.gender);
-  const daily = Math.round(bmr * parseFloat(profile.activity));
+  let daily = bmr * parseFloat(profile.activity);
+  if(profile.goalType==='lose') daily -= 500;
+  if(profile.goalType==='gain') daily += 500;
   bmrEl.textContent = `${Math.round(bmr)} kcal`;
-  dailyTargetEl.textContent = `${daily} kcal`;
-  profileSummary.innerHTML = `<b>${profile.gender}</b>, ${profile.age} yrs, ${profile.height}cm / ${profile.weight}kg — <b>${daily} kcal/day</b>`;
+  dailyTargetEl.textContent = `${Math.round(daily)} kcal`;
+  profileSummary.innerHTML = `<b>${profile.gender}</b>, ${profile.age} yrs, ${profile.height}cm / ${profile.weight}kg — <b>${Math.round(daily)} kcal/day</b>`;
 }
 
-calcBtn.onclick = ()=>{
-  profile = { gender: gender.value, age:+age.value, height:+height.value, weight:+weight.value, activity:activity.value };
+// Save profile
+document.getElementById('calc-target').onclick = ()=>{
+  profile = {
+    gender: gender.value,
+    age:+age.value,
+    height:+height.value,
+    weight:+weight.value,
+    activity:activity.value,
+    goalType:document.getElementById('goal-type').value
+  };
   saveProfile(profile);
   updateProfileDisplay();
   alert('Profile saved!');
 };
 
-clearProfile.onclick = ()=>{
+// Clear profile
+document.getElementById('clear-profile').onclick = ()=>{
   localStorage.removeItem(PROFILE_KEY);
-  profile=null; updateProfileDisplay();
+  profile=null;
+  updateProfileDisplay();
 };
 
+// Default date
 mealDate.value = new Date().toISOString().slice(0,10);
 
-addMealBtn.onclick = ()=>{
+// Add meal
+document.getElementById('add-meal').onclick = ()=>{
   if(!mealName.value){ alert('Enter food name'); return; }
-  meals.push({ date: mealDate.value, name: mealName.value, calories:+calories.value, carbs:+carbs.value, protein:+protein.value, fat:+fat.value });
+  meals.push({
+    date: mealDate.value,
+    name: mealName.value,
+    calories:+calories.value||0,
+    carbs:+carbs.value||0,
+    protein:+protein.value||0,
+    fat:+fat.value||0
+  });
   saveMeals(meals);
   renderMeals();
 };
 
-searchFoodBtn.onclick = async()=>{
+// Search API
+document.getElementById('search-food').onclick = async()=>{
   if(!mealName.value) return alert('Enter food name to search');
   searchFoodBtn.textContent='Searching...';
   const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${mealName.value}&json=1&page_size=1`);
@@ -221,8 +239,13 @@ searchFoodBtn.onclick = async()=>{
   searchFoodBtn.textContent='Search Food';
 };
 
+// Reset form
+document.getElementById('reset-form').onclick=()=>[mealName,grams,calories,carbs,protein,fat].forEach(i=>i.value='');
+
+// Render meals
 function renderMeals(){
-  mealsTbody.innerHTML = meals.map(m=>`
+  const tbody = document.getElementById('meals-tbody');
+  tbody.innerHTML = meals.map(m=>`
     <tr>
       <td class="border p-1">${m.date}</td>
       <td class="border p-1">${m.name}</td>
@@ -234,18 +257,52 @@ function renderMeals(){
   updateTotals();
 }
 
+// Totals
 function updateTotals(){
   const today = new Date().toISOString().slice(0,10);
   const todayMeals = meals.filter(m=>m.date===today);
   const total = todayMeals.reduce((s,m)=>s+(+m.calories||0),0);
-  todayCals.textContent = total.toFixed(1);
+  document.getElementById('today-cals').textContent = total.toFixed(1);
+  updateMonthlyAverages();
 }
 
-clearAllBtn.onclick=()=>{
+// Monthly averages
+function updateMonthlyAverages(){
+  const now = new Date();
+  const monthMeals = meals.filter(m=>{
+    const d = new Date(m.date);
+    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+  });
+  if(monthMeals.length===0){ 
+    document.getElementById('avg-cal').textContent=0;
+    document.getElementById('avg-protein').textContent=0;
+    document.getElementById('avg-carbs').textContent=0;
+    document.getElementById('avg-fat').textContent=0;
+    return;
+  }
+  const grouped = {};
+  monthMeals.forEach(m=>{
+    if(!grouped[m.date]) grouped[m.date]={cal:0,p:0,c:0,f:0};
+    grouped[m.date].cal+=+m.calories||0;
+    grouped[m.date].p+=+m.protein||0;
+    grouped[m.date].c+=+m.carbs||0;
+    grouped[m.date].f+=+m.fat||0;
+  });
+  const days = Object.keys(grouped).length;
+  const avgCal = Object.values(grouped).reduce((a,b)=>a+b.cal,0)/days;
+  const avgP = Object.values(grouped).reduce((a,b)=>a+b.p,0)/days;
+  const avgC = Object.values(grouped).reduce((a,b)=>a+b.c,0)/days;
+  const avgF = Object.values(grouped).reduce((a,b)=>a+b.f,0)/days;
+  document.getElementById('avg-cal').textContent=avgCal.toFixed(1);
+  document.getElementById('avg-protein').textContent=avgP.toFixed(1);
+  document.getElementById('avg-carbs').textContent=avgC.toFixed(1);
+  document.getElementById('avg-fat').textContent=avgF.toFixed(1);
+}
+
+// Clear all
+document.getElementById('clear-all').onclick=()=>{
   if(confirm('Delete all meals?')){ meals=[]; saveMeals(meals); renderMeals(); }
 };
-
-resetFormBtn.onclick=()=>[mealName,grams,calories,carbs,protein,fat].forEach(i=>i.value='');
 
 updateProfileDisplay();
 renderMeals();
