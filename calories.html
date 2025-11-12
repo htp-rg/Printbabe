@@ -79,31 +79,27 @@
     </section>
 
     <!-- ADD / SEARCH MEAL -->
-    <section class="col-span-2 pixel-shadow bg-white p-4 rounded-lg">
-      <h2 class="text-lg font-bold mb-2">Add Meal / Search Food</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
-        <input id="meal-date" type="date" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-        <input id="meal-name" placeholder="Food name (e.g., banana)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-        <select id="serving-type" class="p-2 border-2 border-[color:var(--dark)] rounded-sm bg-[color:var(--lav)]">
-          <option value="100">Per 100g</option>
-          <option value="portion">Per Portion</option>
-        </select>
-      </div>
+   <section class="col-span-2 pixel-shadow bg-white p-4 rounded-lg">
+  <h2 class="text-lg font-bold mb-2">Add Meal / Search Food</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+    <input id="meal-date" type="date" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+    <input id="meal-name" placeholder="Food name (e.g., banana)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+  </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2">
-        <input id="grams" type="number" min="1" placeholder="grams" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-        <input id="calories" type="number" min="0" placeholder="Calories" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-        <input id="carbs" type="number" min="0" placeholder="Carbs (g)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-        <input id="protein" type="number" min="0" placeholder="Protein (g)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-        <input id="fat" type="number" min="0" placeholder="Fat (g)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
-      </div>
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2">
+    <input id="grams" type="number" min="1" placeholder="Grams" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+    <input id="calories" type="number" min="0" placeholder="Calories" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+    <input id="carbs" type="number" min="0" placeholder="Carbs (g)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+    <input id="protein" type="number" min="0" placeholder="Protein (g)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+    <input id="fat" type="number" min="0" placeholder="Fat (g)" class="p-2 border-2 border-[color:var(--dark)] rounded-sm" />
+  </div>
 
-      <div class="flex gap-2 mb-2">
-        <button id="search-food" class="pixel-btn bg-[color:var(--pur)] text-white p-2 rounded">Search Food</button>
-        <button id="add-meal" class="pixel-btn bg-[color:var(--dark)] text-white p-2 rounded">Add Meal</button>
-        <button id="reset-form" class="pixel-btn bg-gray-300 text-black p-2 rounded">Reset</button>
-      </div>
-    </section>
+  <div class="flex gap-2 mb-2">
+    <button id="search-food" class="pixel-btn bg-[color:var(--pur)] text-white p-2 rounded">Search Food</button>
+    <button id="add-meal" class="pixel-btn bg-[color:var(--dark)] text-white p-2 rounded">Add Meal</button>
+    <button id="reset-form" class="pixel-btn bg-gray-300 text-black p-2 rounded">Reset</button>
+  </div>
+</section>
 
     <!-- MEAL LIST -->
     <section class="col-span-3 pixel-shadow bg-white p-4 rounded-lg">
